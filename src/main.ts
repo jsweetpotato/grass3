@@ -1,6 +1,6 @@
 import "@/systems/lodSystem";
 import * as THREE from "three/webgpu";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
+import { OrbitControls, TessellateModifier } from "three/examples/jsm/Addons.js";
 import { Player } from "./entities/player/player";
 import { eventBus } from "./core/EventBus";
 import { CameraSystem } from "./systems/CameraSystem";
@@ -16,6 +16,8 @@ import { PhysicsSystem } from "./systems/PhysicsSystem";
 import { Lights } from "./world/Lights";
 import { gameState } from "./state/gameState";
 import { lodManager } from "@/systems/lodSystem";
+import { Effects } from "./world/Effects";
+import { Test } from "./world/Test";
 // import { Fishing } from "./features/fishing";
 
 class Game {
@@ -23,7 +25,7 @@ class Game {
   scene!: THREE.Scene;
   controls!: OrbitControls;
   renderer!: THREE.Renderer;
-  cameraSystem!: CameraSystem;
+  postProcessing!: THREE.PostProcessing;
   firepit!: Firepit;
   player!: Player;
 
@@ -55,7 +57,8 @@ class Game {
     await PhysicsSystem.init(this.scene);
 
     // Renderer
-    await this.initRenderer();
+    this.initRenderer();
+    this.initEffect();
 
     // World
     this.firepit = new Firepit(this.scene);
@@ -64,10 +67,22 @@ class Game {
     new World(this.scene, this.gui);
     new Fishing(this.scene);
 
+    // new Test(this.scene, this.gui);
+
     // Player
     this.player = new Player(this.scene);
+    this.gui.close();
+
+    await this.renderer.init();
+    this.renderer.setAnimationLoop(this.animate);
 
     window.addEventListener("resize", this.onResize);
+  }
+
+  initEffect() {
+    const postProcessing = new THREE.PostProcessing(this.renderer);
+    this.postProcessing = postProcessing;
+    new Effects(this.scene, CameraSystem.camera, postProcessing, this.gui);
   }
 
   initScene() {
@@ -80,19 +95,20 @@ class Game {
     // this.controls.enableDamping = true;
   }
 
-  async initRenderer() {
+  initRenderer() {
     this.renderer = new THREE.WebGPURenderer({
       canvas: this.canvas,
       antialias: true,
       alpha: true,
     });
-    await this.renderer.init();
+
     this.renderer.shadowMap.enabled = true;
     this.canvas = this.renderer.domElement;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.setAnimationLoop(this.animate);
+    // this.renderer.autoClear = false;
+
     this.gui.add(this.renderer, "toneMapping", {
       ACES: THREE.ACESFilmicToneMapping,
       none: THREE.NoToneMapping,
@@ -126,8 +142,8 @@ class Game {
 
     eventBus.emit("lateUpdate", { delta, playerPos: this.player.getPosition() });
 
-    this.renderer.render(this.scene, CameraSystem.camera);
-
+    // this.renderer.render(this.scene, CameraSystem.camera);
+    this.postProcessing.render();
     // if (this.currentZone === "chopping") this.firepit.update();
   };
 }

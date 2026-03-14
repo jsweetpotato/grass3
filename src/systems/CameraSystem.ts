@@ -41,7 +41,7 @@ export class CameraSystem {
     cameraGUI.add(this.CONFIG, "DISTANCE", 0, 20, 0.01);
     cameraGUI.add(this.CONFIG, "HEIGHT_OFFSET", 0, 20, 0.01);
 
-    eventBus.on("lateUpdate", CameraSystem.update.bind(this));
+    // eventBus.on("lateUpdate", CameraSystem.update.bind(this));
   }
 
   public static get camera(): THREE.PerspectiveCamera {

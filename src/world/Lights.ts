@@ -22,7 +22,7 @@ export class Lights {
     direcLight.position.set(this.offset.x, this.offset.y, this.offset.z);
     direcLight.castShadow = true;
 
-    const d = 70;
+    const d = 50;
     direcLight.shadow.camera.left = -d;
     direcLight.shadow.camera.right = d;
     direcLight.shadow.camera.top = d;
@@ -36,7 +36,7 @@ export class Lights {
 
     direcLight.shadow.bias = -0.0001;
     direcLight.shadow.normalBias = 0.336;
-    direcLight.shadow.mapSize.set(4096, 4096);
+    direcLight.shadow.mapSize.set(2048, 2048);
     direcLight.shadow.autoUpdate = true;
     direcLight.shadow.blurSamples = 4;
 

@@ -12,7 +12,7 @@ export class Stump {
     const { stump } = Assets.get();
 
     const model = stump.scene;
-    model.position.add(this.zonePos);
+    // model.position.add(this.zonePos);
 
     this.scene.add(model);
 

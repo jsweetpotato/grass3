@@ -18,6 +18,7 @@ export class Rocks {
       }
     });
 
+    console.log(rocks);
     this.scene.add(rocks.scene);
   }
 }

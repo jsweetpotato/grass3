@@ -19,6 +19,15 @@ export const lerpAngle = (start: number, end: number, t: number) => {
   return normalizeAngle(start + (end - start) * t);
 };
 
+export const mulberry32 = (seed: number): Function => {
+  return () => {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
 export const PI_2 = Math.PI * 2;
 
 // 각도 전용 SmoothDamp (최단 거리로 회전)

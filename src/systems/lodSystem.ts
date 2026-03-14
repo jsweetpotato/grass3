@@ -70,8 +70,8 @@ class Chunk {
     let newLevel = "";
 
     // 거리에 따른 레벨 결정
-    if (dist < 40) newLevel = "level_1";
-    else if (dist >= 40 && dist < 100) newLevel = "level_2";
+    if (dist < 60) newLevel = "level_1";
+    else if (dist >= 60 && dist < 100) newLevel = "level_2";
     else newLevel = "level_3";
 
     // 💡 핵심 최적화: 기존 레벨과 달라졌을 때만(상태 변화) 이벤트 발생!

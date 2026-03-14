@@ -1,5 +1,5 @@
 import * as THREE from "three/webgpu";
-import { Grass, LongGrass } from "../entities/environment/grass2";
+import { Grass, LongGrass, LongGrass2 } from "../entities/environment/grass2";
 import { Ground } from "../entities/environment/ground";
 
 import { color, Fn, positionWorld, texture, uniform, vec2 } from "three/tsl";
@@ -8,10 +8,11 @@ import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { Water } from "../entities/environment/water";
 import { House } from "../entities/environment/house";
 import { Rocks } from "../entities/environment/rocks";
-import { Bush, Bush2 } from "@/entities/environment/bush";
+import { Bush, Bush2, Bush3 } from "@/entities/environment/bush";
 import { SeaCreatures } from "@/entities/environment/seaCreatures";
 import { Trees } from "@/entities/environment/tree";
 import { WillowTree } from "@/entities/environment/willowtree";
+import { AGrass, Flowers } from "@/entities/environment/flowers";
 
 const CONFIG = {
   WORLD_SIZE: 150,
@@ -35,14 +36,19 @@ export class World {
   ) {
     new Grass(scene, gui, CONFIG);
     new LongGrass(scene, gui, CONFIG);
+    new LongGrass2(scene, gui, CONFIG);
     new Ground(scene, gui, CONFIG);
     new WillowTree(scene, gui);
     new Water(scene, CONFIG);
     new House(scene, gui);
     new Rocks(scene, CONFIG);
     new SeaCreatures(scene);
-    new Bush2(scene, gui);
+    // new Bush(scene, CONFIG);
+    new Bush3(scene, gui, CONFIG);
     new Trees(scene, gui);
+
+    new Flowers(scene, gui);
+    new AGrass(scene, gui, CONFIG);
   }
 }
 

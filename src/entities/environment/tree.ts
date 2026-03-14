@@ -15,14 +15,7 @@ export class Trees {
     });
 
     const bigTree = big_tree.scene.children[0];
-    bigTree.scale.set(8.4, 8.4, 11.5);
 
-    const bigTreeGUI = gui.addFolder("big tree");
-
-    bigTreeGUI.add(bigTree.scale, "x", 5, 20, 0.1);
-    bigTreeGUI.add(bigTree.scale, "y", 5, 20, 0.1);
-    bigTreeGUI.add(bigTree.scale, "z", 5, 20, 0.1);
-    bigTree.position.set(-32, 0, -12);
     bigTree.castShadow = true;
 
     scene.add(trees.scene, big_tree.scene);

@@ -20,8 +20,16 @@ export const resources = [
   { name: "seashell", path: "/models/seashell.glb", type: "object" },
   { name: "trees", path: "/models/trees.glb", type: "object" },
   { name: "big_tree", path: "/models/big_tree.glb", type: "object" },
+
+  // Bush
   { name: "bush_test", path: "/models/bush_test.glb", type: "object" },
   { name: "bush_test2", path: "/models/bush_test2.glb", type: "object" },
+  { name: "bush_test3", path: "/models/bush_metaball.glb", type: "object" },
+  { name: "foreign", path: "/models/foreign.glb", type: "object" },
+
+  // Ect
+  { name: "flowers", path: "/models/flowers_re.glb", type: "object" },
+  { name: "arround_wood_grass", path: "/models/longgrass_w.glb", type: "object" },
 
   /* Texture Image */
   { name: "perlin_noise", path: "/images/Noise.png", type: "image" },
@@ -38,6 +46,7 @@ export const resources = [
   { name: "bush_alpha_2", path: "/images/leaf2.png", type: "image" },
   { name: "bush_alpha_3", path: "/images/leaf3.png", type: "image" },
   { name: "bush_alpha_4", path: "/images/leaf4.png", type: "image" },
+  { name: "flower_alpha", path: "/images/flower.png", type: "image" },
 ] as const;
 
 export class Assets {
