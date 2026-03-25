@@ -9,25 +9,20 @@ export class Stump {
     private scene: THREE.Scene,
     private zonePos: THREE.Vector3
   ) {
-    const { stump } = Assets.get();
-
-    const model = stump.scene;
-    // model.position.add(this.zonePos);
-
-    this.scene.add(model);
-
-    // this.create(model);
-  }
-
-  create(mesh: THREE.Object3D) {
-    const size = getModelSize(mesh);
-    const { position, quaternion } = getWorldTransform(mesh);
-
-    const colliderDesc = RAPIER.ColliderDesc.cylinder(size.y, size.x);
-    const collider = PhysicsSystem.World.createCollider(colliderDesc);
-    collider.setTranslation(position);
-    collider.setRotation(quaternion);
-
-    this.scene.add(mesh);
+    //   const { stump } = Assets.get();
+    //   const model = stump.scene;
+    //   // model.position.add(this.zonePos);
+    //   this.scene.add(model);
+    //   // this.create(model);
+    // }
+    // create(mesh: THREE.Object3D) {
+    //   const size = getModelSize(mesh);
+    //   const { position, quaternion } = getWorldTransform(mesh);
+    //   const colliderDesc = RAPIER.ColliderDesc.cylinder(size.y, size.x);
+    //   const collider = PhysicsSystem.World.createCollider(colliderDesc);
+    //   collider.setTranslation(position);
+    //   collider.setRotation(quaternion);
+    //   this.scene.add(mesh);
+    // }
   }
 }

@@ -1,5 +1,5 @@
 import * as THREE from "three/webgpu";
-import { Grass, LongGrass, LongGrass2 } from "../entities/environment/grass2";
+import { Grass, LongGrass, LongGrass2 } from "../entities/environment/grass";
 import { Ground } from "../entities/environment/ground";
 
 import { color, Fn, positionWorld, texture, uniform, vec2 } from "three/tsl";
@@ -8,11 +8,12 @@ import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { Water } from "../entities/environment/water";
 import { House } from "../entities/environment/house";
 import { Rocks } from "../entities/environment/rocks";
-import { Bush, Bush2, Bush3 } from "@/entities/environment/bush";
+import { Bush3 } from "@/entities/environment/bush";
 import { SeaCreatures } from "@/entities/environment/seaCreatures";
 import { Trees } from "@/entities/environment/tree";
 import { WillowTree } from "@/entities/environment/willowtree";
 import { AGrass, Flowers } from "@/entities/environment/flowers";
+import { Bridge } from "@/entities/environment/bridge";
 
 const CONFIG = {
   WORLD_SIZE: 150,
@@ -23,8 +24,8 @@ const CONFIG = {
     WL: uniform(new THREE.Color("#0077aa")), // Water Low
 
     TT: uniform(color("#94fe8f")), // Tree Top
-    TB: uniform(color("#8afaff")), // Tree Bottom
-  },
+    TB: uniform(color("#8afaff")) // Tree Bottom
+  }
 } as const;
 
 export type TConfig = typeof CONFIG;
@@ -34,21 +35,27 @@ export class World {
     private scene: THREE.Scene,
     private gui: GUI
   ) {
+    // Ground decorations
     new Grass(scene, gui, CONFIG);
     new LongGrass(scene, gui, CONFIG);
     new LongGrass2(scene, gui, CONFIG);
     new Ground(scene, gui, CONFIG);
-    new WillowTree(scene, gui);
-    new Water(scene, CONFIG);
-    new House(scene, gui);
+    new Flowers(scene, gui);
     new Rocks(scene, CONFIG);
     new SeaCreatures(scene);
-    // new Bush(scene, CONFIG);
-    new Bush3(scene, gui, CONFIG);
-    new Trees(scene, gui);
 
-    new Flowers(scene, gui);
-    new AGrass(scene, gui, CONFIG);
+    new Water(scene, CONFIG);
+
+    // Objects
+    new House(scene, gui);
+    new Bridge(scene);
+
+    // Trees
+    new Bush3(scene, gui, CONFIG);
+    new WillowTree(scene, gui);
+    new Trees(scene, gui, CONFIG);
+
+    // new AGrass(scene, gui, CONFIG);
   }
 }
 

@@ -1,6 +1,7 @@
 import { resources } from "@/core/resources";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, type GLTF } from "three/examples/jsm/Addons.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
 type T_ResultTypeMap = {
   object: GLTF;
@@ -45,6 +46,7 @@ export default class Loader {
 
     const gltfLoader = new GLTFLoader(this.manager);
     gltfLoader.setDRACOLoader(draco);
+    gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
     const audioLoader = new THREE.AudioLoader(this.manager);
     const textureLoader = new THREE.TextureLoader(this.manager);
@@ -57,7 +59,7 @@ export default class Loader {
       png: textureLoader,
       jpg: textureLoader,
       jpeg: textureLoader,
-      webp: textureLoader,
+      webp: textureLoader
     };
   }
 

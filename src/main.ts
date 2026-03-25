@@ -18,6 +18,7 @@ import { gameState } from "./state/gameState";
 import { lodManager } from "@/systems/lodSystem";
 import { Effects } from "./world/Effects";
 import { Test } from "./world/Test";
+import Stats from "three/examples/jsm/libs/stats.module.js";
 // import { Fishing } from "./features/fishing";
 
 class Game {
@@ -28,8 +29,9 @@ class Game {
   postProcessing!: THREE.PostProcessing;
   firepit!: Firepit;
   player!: Player;
+  gui!: GUI;
 
-  gui = new GUI();
+  stats!: Stats;
 
   currentZone = "";
 
@@ -43,7 +45,7 @@ class Game {
 
   async init() {
     this.canvas = document.getElementById("game") as HTMLCanvasElement;
-
+    this.initGUI();
     this.initScene();
 
     CameraSystem.init(this.scene, this.gui);
@@ -54,18 +56,18 @@ class Game {
     Assets.init(await new Loader().start());
 
     // Physics
-    await PhysicsSystem.init(this.scene);
+    await PhysicsSystem.init(this.scene, this.gui);
 
     // Renderer
     this.initRenderer();
     this.initEffect();
 
     // World
-    this.firepit = new Firepit(this.scene);
-    new Lights(this.scene, this.gui);
-    new Cooking(this.scene);
+    // this.firepit = new Firepit(this.scene);
+    new Lights(this.scene, CameraSystem.camera, this.gui);
+    // new Cooking(this.scene);
     new World(this.scene, this.gui);
-    new Fishing(this.scene);
+    // new Fishing(this.scene);
 
     // new Test(this.scene, this.gui);
 
@@ -74,6 +76,7 @@ class Game {
     this.gui.close();
 
     await this.renderer.init();
+
     this.renderer.setAnimationLoop(this.animate);
 
     window.addEventListener("resize", this.onResize);
@@ -95,11 +98,36 @@ class Game {
     // this.controls.enableDamping = true;
   }
 
+  initGUI() {
+    this.gui = new GUI();
+    this.stats = new Stats();
+
+    const statDom = this.stats.dom;
+    document.body.appendChild(statDom);
+
+    if (window.location.hash !== "#debug") {
+      this.gui.hide();
+      statDom.style.display = "none";
+    }
+
+    // ---------------------------------------------------
+    // 💡 보너스: 새로고침 없이 주소창만 바꿔도 즉시 반영되게 만들기
+    window.addEventListener("hashchange", () => {
+      if (window.location.hash === "#debug") {
+        this.gui.show();
+        statDom.style.display = "flex";
+      } else {
+        this.gui.hide();
+        statDom.style.display = "none";
+      }
+    });
+  }
+
   initRenderer() {
     this.renderer = new THREE.WebGPURenderer({
       canvas: this.canvas,
       antialias: true,
-      alpha: true,
+      alpha: true
     });
 
     this.renderer.shadowMap.enabled = true;
@@ -116,16 +144,16 @@ class Game {
       Neutral: THREE.NeutralToneMapping,
       Linear: THREE.LinearToneMapping,
       Reinhard: THREE.ReinhardToneMapping,
-      AgX: THREE.AgXToneMapping,
+      AgX: THREE.AgXToneMapping
     });
 
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     this.gui.add(this.renderer.shadowMap, "type", {
       basic: THREE.BasicShadowMap,
       VSM: THREE.VSMShadowMap,
       PCF: THREE.PCFShadowMap,
-      PCFSoft: THREE.PCFSoftShadowMap,
+      PCFSoft: THREE.PCFSoftShadowMap
     });
   }
 
@@ -144,6 +172,7 @@ class Game {
 
     // this.renderer.render(this.scene, CameraSystem.camera);
     this.postProcessing.render();
+    this.stats.update();
     // if (this.currentZone === "chopping") this.firepit.update();
   };
 }

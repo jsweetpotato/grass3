@@ -4,12 +4,19 @@ export class AnimationController {
   private mixer: THREE.AnimationMixer;
   private actions: Map<string, THREE.AnimationAction> = new Map();
   private currentAction: THREE.AnimationAction | null = null;
+  private timeScales: any = {
+    run: 2,
+    walk: 1.5
+  };
 
   constructor(model: THREE.Object3D, animations: THREE.AnimationClip[]) {
     this.mixer = new THREE.AnimationMixer(model);
 
     animations.forEach((clip) => {
       const action = this.mixer.clipAction(clip);
+
+      action.timeScale = this.timeScales[clip.name] || 1;
+
       this.actions.set(clip.name, action);
     });
   }

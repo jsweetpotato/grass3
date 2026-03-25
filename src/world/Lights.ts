@@ -1,18 +1,24 @@
 import { eventBus } from "@/core/EventBus";
 import type { Player } from "@/entities/player/player";
 import type { State } from "@/main";
+import { CSM } from "three/examples/jsm/Addons.js";
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import * as THREE from "three/webgpu";
 export class Lights {
   private directionLight: THREE.DirectionalLight;
+  private shadowMapSize = 4096;
+  private csm!: CSM;
+
+  private d = 15;
   private offset = { x: 50, y: 50, z: 50 };
 
   constructor(
     private scene: THREE.Scene,
+    private camera: THREE.Camera,
     private gui: GUI
   ) {
     // Lights
-    this.scene.add(new THREE.AmbientLight(0xffffff, 1));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
     const direcLight = new THREE.DirectionalLight("#fffbbd", 4);
     const dirLHelper = new THREE.DirectionalLightHelper(direcLight);
@@ -22,25 +28,25 @@ export class Lights {
     direcLight.position.set(this.offset.x, this.offset.y, this.offset.z);
     direcLight.castShadow = true;
 
-    const d = 50;
+    const d = 35;
     direcLight.shadow.camera.left = -d;
     direcLight.shadow.camera.right = d;
     direcLight.shadow.camera.top = d;
     direcLight.shadow.camera.bottom = -d;
 
-    direcLight.shadow.radius = 4;
+    direcLight.shadow.radius = 2;
 
     // 3. 깊이 설정 (중요)
-    direcLight.shadow.camera.near = 0.1;
+    direcLight.shadow.camera.near = 0.001;
     direcLight.shadow.camera.far = 200; // 조명 위치로부터 200만큼의 거리까지 계산
 
-    direcLight.shadow.bias = -0.0001;
-    direcLight.shadow.normalBias = 0.336;
-    direcLight.shadow.mapSize.set(2048, 2048);
+    direcLight.shadow.bias = -0.001;
+    direcLight.shadow.normalBias = 0.001;
+    direcLight.shadow.mapSize.set(4096, 4096);
     direcLight.shadow.autoUpdate = true;
-    direcLight.shadow.blurSamples = 4;
+    direcLight.shadow.blurSamples = 32;
 
-    this.scene.add(direcLight, dirLHelper, shadowHelper);
+    this.scene.add(direcLight);
 
     const DirectionalLightGUI = this.gui.addFolder("DirectionalLight");
     DirectionalLightGUI.add(direcLight, "intensity", 0, 10, 0.01);
@@ -57,15 +63,27 @@ export class Lights {
   update({ delta, playerPos }: State) {
     if (!this.directionLight) return;
 
-    // 1. 조명의 위치 업데이트 (플레이어 대비 항상 일정 거리 유지)
-    this.directionLight.position.x = playerPos.x + this.offset.x;
-    this.directionLight.position.z = playerPos.z + this.offset.z;
+    // 1. 그림자 맵 픽셀 1개가 실제 월드에서 차지하는 크기(크기)를 계산합니다.
+    // 카메라 너비(d * 2) / 해상도(mapSize)
+    const shadowTexelSize = (this.d * 2) / this.shadowMapSize;
 
-    // 2. 조명의 타겟 위치 업데이트 (플레이어의 현재 위치를 바라보게 함)
-    // DirectionalLight의 target은 별도의 Object3D이므로 위치를 직접 수정해야 합니다.
-    this.directionLight.target.position.set(playerPos.x, playerPos.y, playerPos.z);
+    // 2. 플레이어 위치에 맞춰 이상적인 조명 위치를 구합니다.
+    let idealX = playerPos.x + this.offset.x;
+    let idealZ = playerPos.z + this.offset.z;
 
-    // 3. Three.js에서 target의 위치 변화를 반영하기 위해 matrix를 업데이트해야 할 때가 있습니다.
+    // 3. (핵심) 이상적인 위치를 shadowTexelSize 배수로 스냅핑(반올림)하여 떨림을 막습니다!
+    idealX = Math.round(idealX / shadowTexelSize) * shadowTexelSize;
+    idealZ = Math.round(idealZ / shadowTexelSize) * shadowTexelSize;
+
+    this.directionLight.position.x = idealX;
+    this.directionLight.position.z = idealZ;
+
+    // 타겟 위치도 똑같이 스냅핑 해주는 것이 좋습니다.
+    const targetIdealX = Math.round(playerPos.x / shadowTexelSize) * shadowTexelSize;
+    const targetIdealZ = Math.round(playerPos.z / shadowTexelSize) * shadowTexelSize;
+
+    // (y축은 보통 떨림에 큰 영향을 안 주므로 플레이어 y를 그대로 써도 무방)
+    this.directionLight.target.position.set(targetIdealX, playerPos.y, targetIdealZ);
     this.directionLight.target.updateMatrixWorld();
   }
 }

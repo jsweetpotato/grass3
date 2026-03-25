@@ -70,8 +70,8 @@ class Chunk {
     let newLevel = "";
 
     // 거리에 따른 레벨 결정
-    if (dist < 60) newLevel = "level_1";
-    else if (dist >= 60 && dist < 100) newLevel = "level_2";
+    if (dist < 40) newLevel = "level_1";
+    else if (dist >= 40 && dist < 100) newLevel = "level_2";
     else newLevel = "level_3";
 
     // 💡 핵심 최적화: 기존 레벨과 달라졌을 때만(상태 변화) 이벤트 발생!
@@ -81,10 +81,8 @@ class Chunk {
       // 어떤 청크가 어떤 레벨로 변했는지 객체로 묶어서 전달
       eventBus.emit("lod_changed", {
         chunkId: this.id,
-        level: this.currentLevel,
+        level: this.currentLevel
       });
-
-      // console.log(`[${this.id}] changed to ${this.currentLevel}`);
     }
   }
 

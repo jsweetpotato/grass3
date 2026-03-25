@@ -1,7 +1,7 @@
 // Player.ts
 import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
-import { AnimationController, getModelSize, getWorldTransform } from "@/utils";
+
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
 import { Assets } from "@/core/resources";
 import { lerpAngle } from "@/utils/math";
@@ -9,6 +9,7 @@ import { inputManager } from "@/systems/InputSystem";
 import { eventBus } from "@/core/EventBus";
 import { CameraSystem } from "@/systems/CameraSystem";
 import { gameState } from "@/state/gameState";
+import { AnimationController } from "./controls/animation";
 
 export class Player {
   mesh!: THREE.Group<THREE.Object3DEventMap>;
@@ -22,6 +23,7 @@ export class Player {
   action!: THREE.AnimationAction;
 
   isMove = false;
+  isSwim = false;
 
   private clock = gameState.clock;
 
@@ -32,8 +34,8 @@ export class Player {
   private characterRotationTarget = 0;
   private speed = 0;
 
-  private readonly WALK_SPEED = 4;
-  private readonly RUN_SPEED = 9;
+  private readonly WALK_SPEED = 2;
+  private readonly RUN_SPEED = 5;
 
   get rotationTarget() {
     return this.characterRotationTarget;
@@ -47,8 +49,8 @@ export class Player {
     const gltf = man;
 
     this.mesh = gltf.scene;
-    this.mesh.scale.setScalar(0.05);
-    this.mesh.position.y = -1;
+    this.mesh.scale.setScalar(0.5);
+    this.mesh.position.y = -0.15;
 
     this.mesh.traverse((v) => {
       if (v instanceof THREE.Object3D) {
@@ -109,6 +111,18 @@ export class Player {
     if (inputManager.isRightward()) move.x = 1;
 
     const vel = this.rigidBody.linvel();
+    const rbPos = this.rigidBody.translation();
+
+    let targetVelY = vel.y;
+    const WATER_LEVEL = -4.5;
+
+    if (rbPos.y < WATER_LEVEL) {
+      this.isSwim = true;
+      const depth = WATER_LEVEL - rbPos.y;
+      targetVelY = depth;
+    } else {
+      this.isSwim = false;
+    }
 
     if (move.x !== 0 || move.z !== 0) {
       this.isMove = true;
@@ -126,25 +140,34 @@ export class Player {
     const lerpFactor = 1 - Math.exp(-7 * delta);
 
     this.mesh.rotation.y = lerpAngle(this.mesh.rotation.y, this.characterRotationTarget, lerpFactor);
-    this.rigidBody.setLinvel({ x: move.x, y: vel.y, z: move.z }, true);
 
-    const rbPos = this.rigidBody.translation();
+    this.rigidBody.setLinvel({ x: move.x, y: targetVelY, z: move.z }, true);
+
     this.container.position.set(rbPos.x, rbPos.y, rbPos.z);
   }
 
   playerAnimation = (delta: number) => {
-    if (this.isMove) {
-      if (inputManager.isRun()) {
-        this.animeController.play("run", 0.2);
-      } else {
-        this.animeController.play("walk", 0.2);
-      }
+    if (this.isSwim) {
+      if (this.isMove) this.animeController.play("walk:swim", 0.2);
+      else this.animeController.play("idle:swim", 0.2);
     } else {
-      this.animeController.play("idle", 0.2);
+      if (this.isMove) {
+        if (inputManager.isRun()) {
+          this.animeController.play("run", 0.2);
+        } else {
+          this.animeController.play("walk", 0.2);
+        }
+      } else {
+        this.animeController.play("idle", 0.2);
+      }
     }
 
     this.animeController.update(delta);
   };
+
+  // 수영한 상태인지 아닌지
+  // 수영할때도 walk과 shift의 run 두가지 상태
+  // 안움직일때 swimg idle
 
   update = (delta: number) => {
     this.playerMove(delta);

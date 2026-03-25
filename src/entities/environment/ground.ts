@@ -1,51 +1,42 @@
 import * as THREE from "three/webgpu";
 import { Assets } from "@/core/resources";
-import {
-  add,
-  blendColor,
-  blendOverlay,
-  color,
-  float,
-  Fn,
-  max,
-  min,
-  mix,
-  positionLocal,
-  positionWorld,
-  smoothstep,
-  sub,
-  texture,
-  uniform,
-  uv,
-  vec2,
-  vec3,
-} from "three/tsl";
+import { positionLocal, positionWorld, texture, uniform, vec2 } from "three/tsl";
 import RAPIER from "@dimforge/rapier3d-compat";
-import { getModelSize } from "@/utils";
+
 import { data } from "@/core/Data";
 import type { TConfig } from "../../world/World";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export class Ground {
-  SEGEMENT = 31; // 32 -1
+  SEGEMENT = 63; // 32 -1
   world = PhysicsSystem.World;
   constructor(
     private scene: THREE.Scene,
     gui: GUI,
     CONFIG: TConfig
   ) {
+    // Collider
+
+    const rot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI, 0));
+
+    const ColliderDesc = RAPIER.ColliderDesc.heightfield(this.SEGEMENT, this.SEGEMENT, new Float32Array(data.GROUND_HEIGHT_FLOAT), {
+      x: 170,
+      y: 1,
+      z: 170
+    });
+
+    // ColliderDesc.setRotation(rot);
+
+    const collider = this.world.createCollider(ColliderDesc);
+
+    // Ground Model
+
     const { ground } = Assets.get();
 
     const model = ground.scene.children[0] as THREE.Mesh;
-    const ColliderDesc = RAPIER.ColliderDesc.heightfield(this.SEGEMENT, this.SEGEMENT, new Float32Array(data.GROUND_HEIGHT_FLOAT), {
-      x: 150,
-      y: 1,
-      z: 150,
-    });
-    const collider = this.world.createCollider(ColliderDesc);
 
-    const mat = new THREE.MeshStandardNodeMaterial();
+    const mat = new THREE.MeshLambertNodeMaterial();
 
     const remapedY = positionLocal.y.remapClamp(-12, 1, 0, 1);
 

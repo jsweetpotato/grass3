@@ -10,6 +10,12 @@ canvas {
   position: fixed;
 }
 
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
 #prompt {
   position: fixed;
   bottom: 100px;

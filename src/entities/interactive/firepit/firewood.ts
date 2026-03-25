@@ -6,7 +6,7 @@ import { Assets } from "@/core/resources";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
 
 export class FireWood {
-  private size!: THREE.Vector3;
+  private size;
 
   private firewoods = new Set();
   private originTrans = { pos: new Set(), rot: new Set() };
@@ -16,7 +16,7 @@ export class FireWood {
 
   private IMPULSSSSSSSSEEEEEE = [
     { x: -10, y: -3, z: 0 },
-    { x: 10, y: -3, z: 0 },
+    { x: 10, y: -3, z: 0 }
   ];
 
   constructor(
@@ -26,7 +26,7 @@ export class FireWood {
     const { firewood } = Assets.get();
 
     const model = firewood.scene;
-    this.size = getModelSize(model.children[0]);
+    this.size = getModelSize(model.children[0] as THREE.Mesh);
     for (let i = 0; i < model.children.length; i++) this.create(model.children[i]);
   }
 
@@ -48,7 +48,9 @@ export class FireWood {
     rigidBody.setTranslation(position, false);
     rigidBody.setRotation(quaternion, false);
 
-    const colliderDesc = RAPIER.ColliderDesc.cuboid(this.size.x, this.size.y, this.size.z);
+    if (!this.size) return;
+
+    const colliderDesc = RAPIER.ColliderDesc.cuboid(this.size.localSize.x, this.size.localSize.y, this.size.localSize.z);
     const collider = PhysicsSystem.World.createCollider(colliderDesc, rigidBody);
 
     // Set에 저장

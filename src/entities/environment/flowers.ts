@@ -2,21 +2,7 @@ import * as THREE from "three/webgpu";
 
 import { Assets } from "@/core/resources";
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import {
-  cameraProjectionMatrix,
-  cameraViewMatrix,
-  color,
-  float,
-  mix,
-  modelWorldMatrix,
-  positionLocal,
-  sin,
-  texture,
-  time,
-  uv,
-  vec3,
-  vec4,
-} from "three/tsl";
+import { cameraProjectionMatrix, cameraViewMatrix, color, float, mix, modelWorldMatrix, positionLocal, sin, texture, time, uv, vec3, vec4 } from "three/tsl";
 import type { TConfig } from "@/world/World";
 
 export class AGrass {
@@ -49,7 +35,6 @@ export class AGrass {
 
     // 💡 6. positionNode를 버리고, 최종 렌더링 노드인 vertexNode에 카메라 투영을 거쳐 할당합니다.
     material.vertexNode = cameraProjectionMatrix.mul(cameraViewMatrix).mul(finalWorldPos);
-    // console.log(arround_wood_grass);
 
     const meshs = arround_wood_grass.scene;
     meshs.children.forEach((v) => {
@@ -69,7 +54,7 @@ export class Flowers {
     private gui: GUI
   ) {
     const { flowers, flower_alpha } = Assets.get();
-    // console.log("flowers", flowers);
+
     const material = new THREE.MeshLambertNodeMaterial({ transparent: false });
     const map = texture(flower_alpha, uv()).b.toVar();
     material.opacityNode = map.step(0.4);

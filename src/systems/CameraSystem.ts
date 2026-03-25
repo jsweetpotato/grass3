@@ -14,7 +14,7 @@ export class CameraSystem {
   private static _targetYaw = 0;
 
   private static CONFIG = {
-    DISTANCE: 6, // 캐릭터와의 거리 (고정)
+    DISTANCE: 6.72, // 캐릭터와의 거리 (고정)
     HEIGHT_OFFSET: 3, // 캐릭터 머리 위 얼마나 높게 있을지
     LOOK_AT_OFFSET: 1.5, // 캐릭터 발이 아니라 가슴/머리를 보게 함 (중요!)
 
@@ -26,22 +26,21 @@ export class CameraSystem {
     // 최대 회전 속도 (너무 획 돌아가서 어지러운 것 방지)
     MAX_ROTATION_SPEED: Infinity,
 
-    HEIGHT_DAMPING: 3.0,
+    HEIGHT_DAMPING: 1.56
   };
 
   private constructor() {}
 
   public static init(scene: THREE.Scene, gui: GUI) {
     this._camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this._camera.position.set(0, 100, 0);
-    this._camera.lookAt(0, 0, 0);
+
     scene.add(this._camera);
 
     const cameraGUI = gui.addFolder("camera");
     cameraGUI.add(this.CONFIG, "DISTANCE", 0, 20, 0.01);
     cameraGUI.add(this.CONFIG, "HEIGHT_OFFSET", 0, 20, 0.01);
 
-    // eventBus.on("lateUpdate", CameraSystem.update.bind(this));
+    eventBus.on("lateUpdate", CameraSystem.update.bind(this));
   }
 
   public static get camera(): THREE.PerspectiveCamera {

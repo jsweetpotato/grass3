@@ -10,24 +10,20 @@ export class Log {
     private scene: THREE.Scene,
     private zonePos: THREE.Vector3
   ) {
-    const { log } = Assets.get();
-
-    const model = log.scene.children[0];
-    model.position.add(this.zonePos);
-
-    this.create(model);
-  }
-
-  create(mesh: THREE.Object3D) {
-    const size = getModelSize(mesh);
-    const { position, quaternion } = getWorldTransform(mesh);
-
-    const colliderDesc = RAPIER.ColliderDesc.cylinder(size.y, size.x);
-    const collider = PhysicsSystem.World.createCollider(colliderDesc);
-    collider.setTranslation(position);
-    collider.setRotation(quaternion);
-    collider.setSensor(true);
-
-    this.scene.add(mesh);
+    //   const { log } = Assets.get();
+    //   const model = log.scene.children[0];
+    //   model.position.add(this.zonePos);
+    //   this.create(model as THREE.Mesh);
+    // }
+    // create(mesh: THREE.Mesh) {
+    //   const size = getModelSize(mesh);
+    //   const { position, quaternion } = getWorldTransform(mesh);
+    //   const colliderDesc = RAPIER.ColliderDesc.cylinder(size.y, size.x);
+    //   const collider = PhysicsSystem.World.createCollider(colliderDesc);
+    //   collider.setTranslation(position);
+    //   collider.setRotation(quaternion);
+    //   collider.setSensor(true);
+    //   this.scene.add(mesh);
+    // }
   }
 }

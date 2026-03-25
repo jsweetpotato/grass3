@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import * as THREE from "three";
 import { eventBus } from "../core/EventBus";
+import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export class PhysicsSystem {
   private static world: RAPIER.World;
@@ -12,12 +13,13 @@ export class PhysicsSystem {
 
   private constructor() {}
 
-  public static async init(scene: THREE.Scene) {
+  public static async init(scene: THREE.Scene, gui: GUI) {
     this.mesh = new THREE.LineSegments(
       new THREE.BufferGeometry(),
       new THREE.LineBasicMaterial({
         color: 0xffffff,
-        vertexColors: true,
+        linewidth: 2,
+        vertexColors: true
       })
     );
 
@@ -28,15 +30,22 @@ export class PhysicsSystem {
     this.world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
     this.eventQueue = new RAPIER.EventQueue(true);
 
+    const physicsGUI = gui.addFolder("Physics");
+    const config = {
+      debug: PhysicsSystem.debugMode
+    };
+
+    physicsGUI.add(config, "debug").onFinishChange((v) => (PhysicsSystem.debugMode = v));
+
     eventBus.on("update", PhysicsSystem.update);
   }
 
   public static createPlayer(pos: THREE.Vector3): RAPIER.RigidBody {
     const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z));
 
-    const collider = this.world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.5), body);
+    const collider = this.world.createCollider(RAPIER.ColliderDesc.capsule(0.4, 0.5), body);
 
-    const characterController = this.world.createCharacterController(0.3);
+    const characterController = this.world.createCharacterController(0.4);
     characterController.enableAutostep(1, 0.4, true);
     characterController.computeColliderMovement(collider, { x: 0, y: 0, z: 0 });
     characterController.enableSnapToGround(0.5);
@@ -74,6 +83,8 @@ export class PhysicsSystem {
       this.mesh.geometry.setAttribute("position", new THREE.BufferAttribute(buffers.vertices, 3));
       this.mesh.geometry.setAttribute("color", new THREE.BufferAttribute(buffers.colors, 4));
       this.mesh.visible = true;
+    } else {
+      this.mesh.visible = false;
     }
 
     // this.eventQueue.drainCollisionEvents((h1, h2, started) => {

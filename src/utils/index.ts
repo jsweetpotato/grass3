@@ -1,13 +1,23 @@
-import { Fn, mat2, cos, sin } from "three/tsl";
+import { Fn, mat2, cos, sin, convertColorSpace } from "three/tsl";
 import * as THREE from "three/webgpu";
 import { mulberry32 } from "./math";
 
-export function getModelSize(model: THREE.Group<THREE.Object3DEventMap> | THREE.Mesh | THREE.Object3D<THREE.Object3DEventMap>) {
-  const box = new THREE.Box3().setFromObject(model);
-  const size = new THREE.Vector3();
-  box.getSize(size);
-  size.multiplyScalar(0.5);
-  return size;
+export function getModelSize(mesh: THREE.Mesh) {
+  mesh.geometry.computeBoundingBox();
+  const boundingBox = mesh.geometry.boundingBox;
+
+  if (!boundingBox) return;
+
+  const localSize = new THREE.Vector3();
+  boundingBox.getSize(localSize);
+
+  localSize.multiply(mesh.scale).multiplyScalar(0.5);
+
+  const centerOffset = new THREE.Vector3();
+  boundingBox.getCenter(centerOffset);
+  centerOffset.multiply(mesh.scale);
+
+  return { localSize, centerOffset };
 }
 
 export function getWorldTransform(mesh: THREE.Object3D) {
@@ -16,52 +26,6 @@ export function getWorldTransform(mesh: THREE.Object3D) {
   mesh.getWorldPosition(position);
   mesh.getWorldQuaternion(quaternion);
   return { position, quaternion };
-}
-
-export class AnimationController {
-  private mixer: THREE.AnimationMixer;
-  private actions: Map<string, THREE.AnimationAction> = new Map();
-  private currentAction: THREE.AnimationAction | null = null;
-
-  constructor(model: THREE.Object3D, animations: THREE.AnimationClip[]) {
-    this.mixer = new THREE.AnimationMixer(model);
-
-    animations.forEach((clip) => {
-      const action = this.mixer.clipAction(clip);
-      this.actions.set(clip.name, action);
-    });
-  }
-
-  play(name: string, fadeDuration: number = 0.2) {
-    const newAction = this.actions.get(name);
-
-    if (!newAction || newAction === this.currentAction) return;
-
-    newAction.reset();
-    newAction.fadeIn(fadeDuration);
-    newAction.play();
-
-    if (this.currentAction) {
-      this.currentAction.fadeOut(fadeDuration);
-    }
-
-    this.currentAction = newAction;
-  }
-
-  playOneShot(name: string, fadeDuration: number = 0.2) {
-    const action = this.actions.get(name);
-    if (!action) return;
-
-    action.setLoop(THREE.LoopOnce, 1);
-
-    action.clampWhenFinished = true;
-
-    this.play(name, fadeDuration);
-  }
-
-  update(delta: number) {
-    this.mixer.update(delta);
-  }
 }
 
 export const rand = mulberry32(123456);
@@ -78,7 +42,7 @@ export function genInstanceAttributes(count: number, size: number = 10) {
 
     const type = Math.floor(rand() * 4);
     const rot = Math.floor(rand() * 256);
-    const scale = Math.floor(rand() * 256);
+    const scale = Math.floor(rand() * 32);
 
     metadata.setX(i, type | (rot << 2) | (scale << 10));
   }
@@ -99,7 +63,7 @@ export function genInstanceAttributes2(count: number, size: number = 10) {
   for (let i = 0; i < numClusters; i++) {
     clusters.push({
       x: rand() * size, // 기존처럼 범위 내의 임의의 위치를 중심점으로 잡음
-      z: rand() * size,
+      z: rand() * size
     });
   }
 
@@ -126,7 +90,7 @@ export function genInstanceAttributes2(count: number, size: number = 10) {
     // 기존의 완벽한 비트 패킹 로직은 그대로 유지!
     const type = Math.floor(rand() * 4);
     const rot = Math.floor(rand() * 256);
-    const scale = Math.floor(rand() * 256);
+    const scale = Math.floor(rand() * 32);
 
     metadata.setX(i, type | (rot << 2) | (scale << 10));
   }
@@ -183,7 +147,7 @@ function generatePoissonDisk(width: number, height: number, minRadius: number, k
       const dist = minRadius + rand() * minRadius;
       const candidate = {
         x: point.x + Math.cos(angle) * dist,
-        z: point.z + Math.sin(angle) * dist,
+        z: point.z + Math.sin(angle) * dist
       };
 
       if (isValid(candidate)) {
