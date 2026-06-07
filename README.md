@@ -20,7 +20,7 @@ gl_FragColor = texture(atlas, vec3(vUv, vTextureId));
 
 ground에서 trimesh로 생성한 collider가 heightfield보다 더 캐릭터 조작감이 좋을까? -> 개구림 걍 heightfield쓰는게 맞음
 
-# bug fix
+# TODO
 
 - [x] 공중 부양 조개 수정
 - [x] 공중 부양 나무 수정
@@ -36,6 +36,8 @@ ground에서 trimesh로 생성한 collider가 heightfield보다 더 캐릭터 �
 
   - [ ] 이동 범위 제한 박스
 
+---
+
 오늘 할일
 
 1. 캐릭터 변경
@@ -45,4 +47,15 @@ ground에서 trimesh로 생성한 collider가 heightfield보다 더 캐릭터 �
 
 오늘 할일 2
 
-1. 사운드 이팩트 구현
+1. ~~사운드 이팩트 구현~~
+
+오늘 할일 3 [26.03.26]
+
+- [x] bush 최적화 및 오류 수정 (중복된 포지션에 생성된 plane제거: z buffer 튀임 현상 제거)
+- [ ] 캐릭터 저사양 기기 그림자 오류 수정 (bias나 premism, 아님 가짜 셰도우를 만들던지
+      효율 좋은걸로 수정)
+- [ ] 마스크 변경 실시 악
+
+오늘 할일 4 [26.03.31]
+
+- [ ] csm 그림자 오류 수정

@@ -1,6 +1,8 @@
+import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, Scene, Vector3 } from "three/webgpu";
 import RAPIER from "@dimforge/rapier3d-compat";
-import * as THREE from "three";
-import { eventBus } from "../core/EventBus";
+
+import { eventBus } from "@/core/EventBus";
+
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export class PhysicsSystem {
@@ -8,15 +10,15 @@ export class PhysicsSystem {
   private static eventQueue: RAPIER.EventQueue;
   private static bodies = new Map<number, string>();
 
-  private static mesh: THREE.LineSegments;
+  private static mesh: LineSegments;
   private static debugMode: boolean = false;
 
   private constructor() {}
 
-  public static async init(scene: THREE.Scene, gui: GUI) {
-    this.mesh = new THREE.LineSegments(
-      new THREE.BufferGeometry(),
-      new THREE.LineBasicMaterial({
+  public static async init(scene: Scene, gui: GUI) {
+    this.mesh = new LineSegments(
+      new BufferGeometry(),
+      new LineBasicMaterial({
         color: 0xffffff,
         linewidth: 2,
         vertexColors: true
@@ -40,7 +42,7 @@ export class PhysicsSystem {
     eventBus.on("update", PhysicsSystem.update);
   }
 
-  public static createPlayer(pos: THREE.Vector3): RAPIER.RigidBody {
+  public static createPlayer(pos: Vector3): RAPIER.RigidBody {
     const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z));
 
     const collider = this.world.createCollider(RAPIER.ColliderDesc.capsule(0.4, 0.5), body);
@@ -66,7 +68,7 @@ export class PhysicsSystem {
     return (member << 16) | filter;
   }
 
-  public static createZone(name: string, pos: THREE.Vector3, radius: number) {
+  public static createZone(name: string, pos: Vector3, radius: number) {
     const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z));
 
     const collider = this.world.createCollider(RAPIER.ColliderDesc.cylinder(0.5, radius).setSensor(true), body);
@@ -80,8 +82,8 @@ export class PhysicsSystem {
 
     if (this.debugMode) {
       const buffers = this.world.debugRender();
-      this.mesh.geometry.setAttribute("position", new THREE.BufferAttribute(buffers.vertices, 3));
-      this.mesh.geometry.setAttribute("color", new THREE.BufferAttribute(buffers.colors, 4));
+      this.mesh.geometry.setAttribute("position", new BufferAttribute(buffers.vertices, 3));
+      this.mesh.geometry.setAttribute("color", new BufferAttribute(buffers.colors, 4));
       this.mesh.visible = true;
     } else {
       this.mesh.visible = false;

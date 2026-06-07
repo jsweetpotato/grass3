@@ -1,46 +1,31 @@
+import { BackSide, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshLambertNodeMaterial, RepeatWrapping, type Scene } from "three/webgpu";
+import { round, attribute, float, div, uv, vec2, mod, mul, sub, add, texture, cameraProjectionMatrix, modelViewMatrix, vec3, vec4, normalize, positionLocal, color } from "three/tsl";
+
+// managers
 import { Assets } from "@/core/resources";
+
+// types
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import {
-  round,
-  attribute,
-  float,
-  div,
-  uv,
-  vec2,
-  mod,
-  mul,
-  sub,
-  add,
-  texture,
-  cameraProjectionMatrix,
-  modelViewMatrix,
-  vec3,
-  vec4,
-  normalize,
-  positionLocal,
-  color,
-} from "three/tsl";
-import * as THREE from "three/webgpu";
 
 export class WillowTree {
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     gui: GUI
   ) {
     const { willow_tree, willow_leaf } = Assets.get();
 
     const alphaTexture = willow_leaf;
-    alphaTexture.wrapS = THREE.RepeatWrapping;
-    alphaTexture.wrapT = THREE.RepeatWrapping;
+    alphaTexture.wrapS = RepeatWrapping;
+    alphaTexture.wrapT = RepeatWrapping;
 
     const model = willow_tree.scene;
 
     const foliages = model.children.splice(1, model.children.length);
-    const group = new THREE.Group();
+    const group = new Group();
     group.add(...foliages);
 
     const scale = {
-      scalar: 1,
+      scalar: 1
     };
     gui.add(scale, "scalar", 0, 1, 0.01).onFinishChange((v) => group.scale.setScalar(v));
 
@@ -51,7 +36,7 @@ export class WillowTree {
 
     scene.add(group);
 
-    const material = new THREE.MeshLambertNodeMaterial({ transparent: false, side: THREE.BackSide });
+    const material = new MeshLambertNodeMaterial({ transparent: false, side: BackSide });
 
     // 나뭇잎 최적화 필수
     const indexNode = round(attribute("aUVIndex"));
@@ -96,69 +81,74 @@ export class WillowTree {
 
     const sphericalNormal = normalize(positionLocal);
     material.normalNode = sphericalNormal;
+    // 1. Geometry 캐싱용 Map (중복된 toNonIndexed 및 연산 방지)
+    const processedGeometries = new Map<BufferGeometry, BufferGeometry>();
 
     foliages.forEach((v) => {
-      const foliage = v as THREE.Mesh;
+      const foliage = v as Mesh;
       foliage.castShadow = true;
       foliage.receiveShadow = true;
-      foliage.geometry = foliage.geometry.toNonIndexed();
 
-      addCenterAttribute(foliage.geometry);
-      addUVIndex(foliage.geometry);
+      // 2. 이미 처리된 Geometry인지 확인하고, 처음 보는 거라면 처리 후 캐싱
+      let optimizedGeo = processedGeometries.get(foliage.geometry);
 
+      if (!optimizedGeo) {
+        optimizedGeo = foliage.geometry.toNonIndexed();
+        this.processFoliageGeometry(optimizedGeo); // 통합된 고속 연산 함수
+        processedGeometries.set(foliage.geometry, optimizedGeo);
+      }
+
+      foliage.geometry = optimizedGeo;
       foliage.material = material;
     });
   }
-}
 
-function addCenterAttribute(geometry: THREE.BufferGeometry) {
-  const posAttr = geometry.attributes.position;
-  const count = posAttr.count;
+  // 3. 두 개의 무거운 루프를 하나로 합치고, 함수 호출을 제거한 초고속 연산 메서드
+  private processFoliageGeometry(geometry: BufferGeometry) {
+    const posAttr = geometry.attributes.position;
+    const posArray = posAttr.array; // 원시 Float32Array에 직접 접근
+    const count = posAttr.count;
 
-  const centers = new Float32Array(count * 3);
+    const centers = new Float32Array(count * 3);
+    const uvIndices = new Float32Array(count);
 
-  // Quad = 4, Non-indexed = 6
-  const stride = 6;
+    const stride = 6; // Quad = 4, Non-indexed = 6
 
-  for (let i = 0; i < count; i += stride) {
-    let cx = 0,
-      cy = 0,
-      cz = 0;
+    for (let i = 0; i < count; i += stride) {
+      let cx = 0,
+        cy = 0,
+        cz = 0;
 
-    for (let j = 0; j < stride; j++) {
-      cx += posAttr.getX(i + j);
-      cy += posAttr.getY(i + j);
-      cz += posAttr.getZ(i + j);
-    }
+      // A. Center 계산을 위해 원시 배열 인덱스 직접 조회
+      for (let j = 0; j < stride; j++) {
+        const vIdx = (i + j) * 3;
+        cx += posArray[vIdx + 0];
+        cy += posArray[vIdx + 1];
+        cz += posArray[vIdx + 2];
+      }
 
-    cx /= stride;
-    cy /= stride;
-    cz /= stride;
+      cx /= stride;
+      cy /= stride;
+      cz /= stride;
 
-    for (let j = 0; j < stride; j++) {
-      const idx = (i + j) * 3;
-      centers[idx] = cx;
-      centers[idx + 1] = cy;
-      centers[idx + 2] = cz;
-    }
-  }
+      // B. 랜덤 인덱스 1회만 계산 (stride 단위로 동일하게 적용)
+      const randomIndex = Math.floor(Math.random() * 9);
 
-  geometry.setAttribute("aCenter", new THREE.Float32BufferAttribute(centers, 3));
-}
+      // C. 계산된 Center와 UV Index를 한 번에 배열에 삽입
+      for (let j = 0; j < stride; j++) {
+        if (i + j < count) {
+          const vIdx = (i + j) * 3;
+          centers[vIdx + 0] = cx;
+          centers[vIdx + 1] = cy;
+          centers[vIdx + 2] = cz;
 
-function addUVIndex(geometry: THREE.BufferGeometry) {
-  const count = geometry.attributes.position.count;
-
-  const atlasIndices = new Float32Array(count);
-
-  for (let i = 0; i < count; i += 6) {
-    const randomIndex = Math.floor(Math.random() * 9);
-
-    for (let j = 0; j < 6; j++) {
-      if (i + j < count) {
-        atlasIndices[i + j] = randomIndex;
+          uvIndices[i + j] = randomIndex;
+        }
       }
     }
+
+    // 최종적으로 한 번만 Attribute 등록
+    geometry.setAttribute("aCenter", new Float32BufferAttribute(centers, 3));
+    geometry.setAttribute("aUVIndex", new Float32BufferAttribute(uvIndices, 1));
   }
-  geometry.setAttribute("aUVIndex", new THREE.Float32BufferAttribute(atlasIndices, 1));
 }

@@ -1,16 +1,16 @@
-import * as THREE from "three/webgpu";
-
-import { bloom } from "three/examples/jsm/tsl/display/BloomNode.js";
+import { Camera, PostProcessing, UnsignedByteType, type Scene } from "three/webgpu";
 import { pass, mrt, output, emissive, rangeFogFactor, cameraFar, vec4 } from "three/tsl";
+import { bloom } from "three/examples/jsm/tsl/display/BloomNode.js";
+
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export class Effects {
-  constructor(scene: THREE.Scene, camera: THREE.Camera, postProcessing: THREE.PostProcessing, gui: GUI) {
+  constructor(scene: Scene, camera: Camera, postProcessing: PostProcessing, gui: GUI) {
     const scenePass = pass(scene, camera);
 
     const mrtNode = mrt({
       output: output,
-      emissive: vec4(emissive, output.a),
+      emissive: vec4(emissive, output.a)
     });
 
     scenePass.setMRT(mrtNode);
@@ -20,7 +20,7 @@ export class Effects {
     const scenePassColor = scenePass.getTextureNode().toVar();
 
     const emissiveTexture = scenePass.getTexture("emissive");
-    emissiveTexture.type = THREE.UnsignedByteType;
+    emissiveTexture.type = UnsignedByteType;
 
     const emissivePass = scenePass.getTextureNode("emissive");
 

@@ -3,19 +3,19 @@ import { PhysicsSystem } from "@/systems/PhysicsSystem";
 
 import { getModelSize, getWorldTransform } from "@/utils";
 import RAPIER from "@dimforge/rapier3d-compat";
-import * as THREE from "three/webgpu";
+import type { Scene, Vector3 } from "three/webgpu";
 
 export class Log {
   constructor(
-    private scene: THREE.Scene,
-    private zonePos: THREE.Vector3
+    private scene: Scene,
+    private zonePos: Vector3
   ) {
     //   const { log } = Assets.get();
     //   const model = log.scene.children[0];
     //   model.position.add(this.zonePos);
-    //   this.create(model as THREE.Mesh);
+    //   this.create(model as Mesh);
     // }
-    // create(mesh: THREE.Mesh) {
+    // create(mesh: Mesh) {
     //   const size = getModelSize(mesh);
     //   const { position, quaternion } = getWorldTransform(mesh);
     //   const colliderDesc = RAPIER.ColliderDesc.cylinder(size.y, size.x);

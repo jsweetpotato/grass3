@@ -1,25 +1,34 @@
-import { Assets } from "@/core/resources";
-import * as THREE from "three/webgpu";
-import { getScaledUV, type TConfig } from "../../world/World";
-import { color, distance, length, positionWorld, reflector, texture, time, uv, vec2 } from "three/tsl";
+import { BoxGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicNodeMaterial, MeshLambertNodeMaterial, PlaneGeometry, Vector3, type Scene } from "three/webgpu";
+import { distance, positionWorld, reflector, texture, time, uv, vec2 } from "three/tsl";
 
+// managerts
+import { Assets } from "@/core/resources";
+
+// types
+import type { TConfig } from "@/world/World";
 export class Water {
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     private CONFIG: TConfig
   ) {
+    const waveMesh = this.createWave();
+    const overlayMesh = this.createOverlay();
+    this.scene.add(waveMesh, overlayMesh);
+  }
+
+  createWave() {
     const { depth } = Assets.get();
 
-    const geometry = new THREE.BoxGeometry(400, 0.001, 400, 1, 1, 1);
-    const material = new THREE.MeshLambertNodeMaterial({
-      transparent: true,
+    const geometry = new BoxGeometry(400, 0.001, 400, 1, 1, 1);
+    const material = new MeshLambertNodeMaterial({
+      transparent: true
     });
 
     const reflection = reflector({
       // @ts-ignore
       resolutionScale: 0.7,
       depth: true,
-      bounces: false,
+      bounces: false
     });
     reflection.getDepthNode().toVar();
 
@@ -40,13 +49,10 @@ export class Water {
 
     material.opacityNode = opacity;
 
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new Mesh(geometry, material);
     mesh.position.y = -4.5;
 
-    this.scene.add(mesh);
-
-    const overlayMesh = this.createOverlay();
-    this.scene.add(overlayMesh);
+    return mesh;
   }
 
   createOverlay() {
@@ -60,15 +66,15 @@ export class Water {
       { x: -d, y: hgt, z: -d }, // o
       { x: d, y: hgt, z: -d },
       { x: 0, y: hgt, z: -d }, // o
-      { x: 0, y: hgt, z: d },
+      { x: 0, y: hgt, z: d }
     ];
 
-    const vec = new THREE.Vector3();
-    const matrix = new THREE.Matrix4();
+    const vec = new Vector3();
+    const matrix = new Matrix4();
 
-    const overlayGeo = new THREE.PlaneGeometry(d, d);
+    const overlayGeo = new PlaneGeometry(d, d);
     overlayGeo.rotateX(-Math.PI * 0.5);
-    const overlayMat = new THREE.MeshBasicNodeMaterial({ transparent: true });
+    const overlayMat = new MeshBasicNodeMaterial({ transparent: true });
     const overlayAlpha = distance(vec2(0, 0), positionWorld.xz.div(d * 1.5))
       .oneMinus()
       .toVar();
@@ -76,7 +82,7 @@ export class Water {
     overlayMat.colorNode = this.CONFIG.COLOR.WH;
     overlayMat.opacityNode = overlayAlpha;
 
-    const overlayMesh = new THREE.InstancedMesh(overlayGeo, overlayMat, pos.length);
+    const overlayMesh = new InstancedMesh(overlayGeo, overlayMat, pos.length);
 
     for (let i = 0; i < pos.length; i++) {
       const posistion = pos[i];

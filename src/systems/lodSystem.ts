@@ -1,5 +1,5 @@
 import { eventBus } from "@/core/EventBus";
-import * as THREE from "three/webgpu";
+import { Vector3 } from "three/webgpu";
 
 export class LODSystem {
   private CHUNK_CELL = { x: 5, z: 4 };
@@ -20,7 +20,7 @@ export class LODSystem {
         const x = i * this.CHUNK_SIZE - halfX + offset + this.OFFSET.x;
         const z = j * this.CHUNK_SIZE - halfZ + offset + this.OFFSET.z;
 
-        const center = new THREE.Vector3(x, 0, z);
+        const center = new Vector3(x, 0, z);
         const id = `chunk_${i}_${j}`; // 고유 ID 부여 (예: chunk_0_0)
 
         // 청크 생성 후 배열에 저장
@@ -35,7 +35,7 @@ export class LODSystem {
   }
 
   // 매 프레임(animate)마다 호출할 업데이트 함수
-  update(cameraPosition: THREE.Vector3) {
+  update(cameraPosition: Vector3) {
     for (const chunk of this.chunks) {
       chunk.checkLOD(cameraPosition);
     }
@@ -55,17 +55,17 @@ export class LODSystem {
 
 class Chunk {
   public id: string;
-  private center: THREE.Vector3;
+  private center: Vector3;
 
   private currentLevel: string = ""; // 현재 LOD 상태 저장용
 
-  constructor(id: string, center: THREE.Vector3) {
+  constructor(id: string, center: Vector3) {
     this.id = id;
     this.center = center;
   }
 
   // 통합 LOD 관리자 함수
-  checkLOD(cameraPosition: THREE.Vector3) {
+  checkLOD(cameraPosition: Vector3) {
     const dist = this.center.distanceTo(cameraPosition);
     let newLevel = "";
 

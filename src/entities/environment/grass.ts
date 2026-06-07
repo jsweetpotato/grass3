@@ -1,21 +1,15 @@
-import * as THREE from "three/webgpu";
-
+import { BufferGeometry, Color, ConstNode, InstancedMesh, Mesh, MeshLambertNodeMaterial, NodeMaterial, PlaneGeometry, RepeatWrapping, Scene, UniformNode } from "three/webgpu";
 import {
   attribute,
   bitAnd,
   color,
-  cos,
   float,
   Fn,
-  length,
-  materialColor,
   mix,
   modelViewMatrix,
   modelWorldMatrix,
-  mul,
   normalize,
   positionLocal,
-  positionWorld,
   rotate,
   shiftRight,
   sin,
@@ -30,23 +24,23 @@ import {
 } from "three/tsl";
 
 import { genInstanceAttributes, genInstanceAttributes2 } from "@/utils/index";
+
+// managers
 import { lodManager } from "@/systems/lodSystem";
 import { Assets } from "@/core/resources";
 import { eventBus } from "@/core/EventBus";
+
+// types
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import type { TConfig } from "@/world/World";
+import type { Node } from "three/webgpu";
 
-// 청크별 메쉬들을 묶어둘 타입 정의
 interface ChunkMeshes {
-  level_1: THREE.InstancedMesh; // 가까울 때 (High Poly)
-  level_2: THREE.InstancedMesh; // 중간 거리 (Low Poly)
+  level_1: InstancedMesh; // 가까울 때 (High Poly)
+  level_2: InstancedMesh; // 중간 거리 (Low Poly)
 }
 
-interface sway_I {
-  metaData: Uint32Array;
-}
-
-const swayLevel1 = Fn(([rotation, scale, iWPos, uvY, timer, playerPos]: [rotation: THREE.Node, scale: THREE.Node, iWPos: THREE.Node, uvY: THREE.Node, timer: THREE.Node, playerPos: THREE.Node]) => {
+const swayLevel1 = Fn(([rotation, scale, iWPos, uvY, timer, playerPos]: [rotation: Node, scale: Node, iWPos: Node, uvY: Node, timer: Node, playerPos: Node]) => {
   const bigSway = sin(timer.add(iWPos.x.mul(0.1)).add(iWPos.z.mul(0.1)));
   const microSway = sin(timer.mul(3.0).add(iWPos.x.mul(2.0))).mul(0.01);
   const totalWind = bigSway.add(microSway).mul(uvY);
@@ -69,26 +63,15 @@ const swayLevel1 = Fn(([rotation, scale, iWPos, uvY, timer, playerPos]: [rotatio
   return finalPos;
 });
 
-const swayLevel3 = Fn(
-  ([rotation, scale, noiseTexture, uvY, amp, pow, freq]: [
-    rotation: THREE.Node,
-    scale: THREE.Node,
-    noiseTexture: THREE.Node,
-    uvY: THREE.Node,
-    amp: THREE.Node,
-    pow: THREE.Node,
-    freq: THREE.Node,
-    playerPos: THREE.Node
-  ]) => {
-    const sway1 = sin(positionLocal.x.add(noiseTexture.mul(amp)))
-      .mul(freq)
-      .mul(uvY.pow(pow));
-    const swayvec = vec3(sway1.mul(-1), 0, 0);
-    const finalPos = rotation.mul(scale).add(swayvec);
+const swayLevel3 = Fn(([rotation, scale, noiseTexture, uvY, amp, pow, freq]: [rotation: Node, scale: Node, noiseTexture: Node, uvY: Node, amp: Node, pow: Node, freq: Node, playerPos: Node]) => {
+  const sway1 = sin(positionLocal.x.add(noiseTexture.mul(amp)))
+    .mul(freq)
+    .mul(uvY.pow(pow));
+  const swayvec = vec3(sway1.mul(-1), 0, 0);
+  const finalPos = rotation.mul(scale).add(swayvec);
 
-    return finalPos;
-  }
-);
+  return finalPos;
+});
 
 const flatShade = Fn(() => {
   const upVec = vec3(0, 1, 0);
@@ -103,12 +86,11 @@ eventBus.on("lateUpdate", (state) => {
 });
 
 class Base {
-  protected scene: THREE.Scene;
+  protected scene: Scene;
   static gui: GUI;
 
   static uniforms = {
     grassScale: uniform(1.6),
-
     speedX: uniform(4.2),
     speedZ: uniform(2),
     freq: uniform(0.7),
@@ -121,10 +103,10 @@ class Base {
   // 생성된 시각적 청크들을 ID를 키(Key)로 하여 저장할 Map
   chunkVisuals: Map<string, ChunkMeshes> = new Map();
 
-  matLOD1!: THREE.NodeMaterial;
-  matLOD2!: THREE.NodeMaterial;
+  matLOD1!: NodeMaterial;
+  matLOD2!: NodeMaterial;
 
-  baseMaterial!: THREE.MeshLambertNodeMaterial;
+  baseMaterial!: MeshLambertNodeMaterial;
 
   protected options = {
     INSTANCES_PER_CHUNK: 40,
@@ -132,13 +114,13 @@ class Base {
   };
 
   constructor(
-    scene: THREE.Scene,
+    scene: Scene,
     private gui: GUI,
     CONFIG: TConfig
   ) {
     this.scene = scene;
     this.config = CONFIG;
-    this.baseMaterial = new THREE.MeshLambertNodeMaterial();
+    this.baseMaterial = new MeshLambertNodeMaterial();
 
     if (!Base.gui) {
       Base.gui = this.gui;
@@ -162,7 +144,7 @@ class Base {
     }
   }
 
-  createInstance(geoLOD: [THREE.BufferGeometry, THREE.BufferGeometry], matLOD: [THREE.NodeMaterial, THREE.NodeMaterial], genType: 1 | 2) {
+  createInstance(geoLOD: [BufferGeometry, BufferGeometry], matLOD: [NodeMaterial, NodeMaterial], genType: 1 | 2) {
     const { chunkCell, chunkSize, offset } = lodManager;
 
     const halfX = (chunkCell.x * chunkSize) / 2;
@@ -172,32 +154,23 @@ class Base {
 
     const { iPos, iData } = genType < 2 ? genInstanceAttributes(INSTANCES_PER_CHUNK, chunkSize) : genInstanceAttributes2(INSTANCES_PER_CHUNK, chunkSize);
 
-    const chunkRadius = (chunkSize / 2) * Math.SQRT2 + 5.0;
-
-    // 💡 2. 로컬 기준(0,0,0)으로 거대한 바운딩 스피어(경계 구) 생성
-
     geoLOD[0].setAttribute("iPos", iPos);
     geoLOD[1].setAttribute("iPos", iPos);
     geoLOD[0].setAttribute("iData", iData);
     geoLOD[1].setAttribute("iData", iData);
 
-    // const customBoundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), chunkRadius);
-
     for (let x = 0; x < chunkCell.x; x++) {
       for (let z = 0; z < chunkCell.z; z++) {
         const chunkId = `chunk_${x}_${z}`;
 
-        const meshLOD1 = new THREE.InstancedMesh(geoLOD[0], matLOD[0], INSTANCES_PER_CHUNK);
-        const meshLOD2 = new THREE.InstancedMesh(geoLOD[1], matLOD[1], INSTANCES_PER_CHUNK);
+        const meshLOD1 = new InstancedMesh(geoLOD[0], matLOD[0], INSTANCES_PER_CHUNK);
+        const meshLOD2 = new InstancedMesh(geoLOD[1], matLOD[1], INSTANCES_PER_CHUNK);
 
         meshLOD1.castShadow = false;
         meshLOD1.receiveShadow = true;
 
         meshLOD2.castShadow = false;
         meshLOD2.receiveShadow = true;
-
-        // meshLOD1.boundingSphere = customBoundingSphere;
-        // meshLOD2.boundingSphere = customBoundingSphere;
 
         const posX = x * chunkSize - halfX + offset.x;
         const posZ = z * chunkSize - halfZ + offset.z;
@@ -225,7 +198,7 @@ class Base {
 
   protected setMaterial() {}
 
-  initMaterial(col1: THREE.ConstNode<THREE.Color> | THREE.UniformNode<THREE.Color>, col2: THREE.ConstNode<THREE.Color> | THREE.UniformNode<THREE.Color>) {
+  initMaterial(col1: ConstNode<Color> | UniformNode<Color>, col2: ConstNode<Color> | UniformNode<Color>) {
     const { mask, depth, perlin_noise } = Assets.get();
 
     this.baseMaterial.transparent = false;
@@ -253,8 +226,8 @@ class Base {
     const maskTexture = texture(mask, scaledUV).r.toVar();
     const depthTexture = texture(depth, scaledUV).b.toVar();
 
-    perlin_noise.wrapS = THREE.RepeatWrapping;
-    perlin_noise.wrapT = THREE.RepeatWrapping;
+    perlin_noise.wrapS = RepeatWrapping;
+    perlin_noise.wrapT = RepeatWrapping;
 
     const uniforms = Base.uniforms;
 
@@ -357,7 +330,7 @@ export class Grass extends Base {
     SCALE: { MIN: 3, MAX: 3.5 }
   };
 
-  constructor(scene: THREE.Scene, gui: GUI, config: TConfig) {
+  constructor(scene: Scene, gui: GUI, config: TConfig) {
     super(scene, gui, config);
     this.setMaterial();
     this.initMaterial(this.config.COLOR.GH, color("yellowgreen"));
@@ -369,8 +342,8 @@ export class Grass extends Base {
     const assets = Assets.get();
     const { grass_lev_1, grass_lev_2 } = assets;
 
-    const geoLOD1 = (grass_lev_1.scene.children[0] as THREE.Mesh).geometry;
-    const geoLOD2 = (grass_lev_2.scene.children[0] as THREE.Mesh).geometry;
+    const geoLOD1 = (grass_lev_1.scene.children[0] as Mesh).geometry;
+    const geoLOD2 = (grass_lev_2.scene.children[0] as Mesh).geometry;
 
     this.createInstance([geoLOD1, geoLOD2], [this.matLOD1, this.matLOD2], 1);
   }
@@ -384,7 +357,7 @@ export class LongGrass extends Base {
     SCALE: { MIN: 1, MAX: 2 }
   };
 
-  constructor(scene: THREE.Scene, gui: GUI, config: TConfig) {
+  constructor(scene: Scene, gui: GUI, config: TConfig) {
     super(scene, gui, config);
     this.setMaterial();
     this.initMaterial(this.config.COLOR.GH, color("pink"));
@@ -393,8 +366,8 @@ export class LongGrass extends Base {
   }
 
   init() {
-    const geoLOD1 = new THREE.PlaneGeometry(1, 1, 5, 1);
-    const geoLOD2 = new THREE.PlaneGeometry(1, 1);
+    const geoLOD1 = new PlaneGeometry(1, 1, 5, 1);
+    const geoLOD2 = new PlaneGeometry(1, 1);
 
     geoLOD1.translate(0, 0.5, 0);
     geoLOD2.translate(0, 0.5, 0);
@@ -441,7 +414,7 @@ export class LongGrass2 extends Base {
     INSTANCES_PER_CHUNK: 1000,
     SCALE: { MIN: 1, MAX: 2 }
   };
-  constructor(scene: THREE.Scene, gui: GUI, config: TConfig) {
+  constructor(scene: Scene, gui: GUI, config: TConfig) {
     super(scene, gui, config);
     this.setMaterial();
     this.initMaterial(this.config.COLOR.GH, color("pink"));
@@ -450,8 +423,8 @@ export class LongGrass2 extends Base {
   }
 
   init() {
-    const geoLOD1 = new THREE.PlaneGeometry(1, 1, 5, 1);
-    const geoLOD2 = new THREE.PlaneGeometry(1, 1);
+    const geoLOD1 = new PlaneGeometry(1, 1, 5, 1);
+    const geoLOD2 = new PlaneGeometry(1, 1);
 
     geoLOD1.translate(0, 0.5, 0);
     geoLOD2.translate(0, 0.5, 0);

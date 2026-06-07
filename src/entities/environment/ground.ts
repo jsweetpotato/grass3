@@ -1,24 +1,25 @@
-import * as THREE from "three/webgpu";
-import { Assets } from "@/core/resources";
+import { Euler, Mesh, MeshLambertNodeMaterial, Quaternion, Scene } from "three/webgpu";
 import { positionLocal, positionWorld, texture, uniform, vec2 } from "three/tsl";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { data } from "@/core/Data";
-import type { TConfig } from "../../world/World";
+import { Assets } from "@/core/resources";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
+
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+import type { TConfig } from "../../world/World";
 
 export class Ground {
   SEGEMENT = 63; // 32 -1
   world = PhysicsSystem.World;
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     gui: GUI,
     CONFIG: TConfig
   ) {
     // Collider
 
-    const rot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI, 0));
+    const rot = new Quaternion().setFromEuler(new Euler(0, Math.PI, 0));
 
     const ColliderDesc = RAPIER.ColliderDesc.heightfield(this.SEGEMENT, this.SEGEMENT, new Float32Array(data.GROUND_HEIGHT_FLOAT), {
       x: 170,
@@ -34,9 +35,9 @@ export class Ground {
 
     const { ground } = Assets.get();
 
-    const model = ground.scene.children[0] as THREE.Mesh;
+    const model = ground.scene.children[0] as Mesh;
 
-    const mat = new THREE.MeshLambertNodeMaterial();
+    const mat = new MeshLambertNodeMaterial();
 
     const remapedY = positionLocal.y.remapClamp(-12, 1, 0, 1);
 

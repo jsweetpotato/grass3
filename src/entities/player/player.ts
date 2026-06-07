@@ -1,33 +1,37 @@
-// Player.ts
-import * as THREE from "three";
+import { AnimationAction, AnimationMixer, Group, Object3D, Scene, Vector3, type Object3DEventMap } from "three/webgpu";
+
 import RAPIER from "@dimforge/rapier3d-compat";
 
-import { PhysicsSystem } from "@/systems/PhysicsSystem";
-import { Assets } from "@/core/resources";
 import { lerpAngle } from "@/utils/math";
+
+import { PhysicsSystem } from "@/systems/PhysicsSystem";
 import { inputManager } from "@/systems/InputSystem";
-import { eventBus } from "@/core/EventBus";
 import { CameraSystem } from "@/systems/CameraSystem";
+
+import { Assets } from "@/core/resources";
+import { eventBus } from "@/core/EventBus";
+
 import { gameState } from "@/state/gameState";
+
 import { AnimationController } from "./controls/animation";
 
 export class Player {
-  mesh!: THREE.Group<THREE.Object3DEventMap>;
+  mesh!: Group<Object3DEventMap>;
 
   rigidBody!: RAPIER.RigidBody;
 
-  currentTool: THREE.Object3D | null = null;
+  currentTool: Object3D | null = null;
   currentToolBody!: RAPIER.RigidBody;
 
-  mixer!: THREE.AnimationMixer;
-  action!: THREE.AnimationAction;
+  mixer!: AnimationMixer;
+  action!: AnimationAction;
 
   isMove = false;
   isSwim = false;
 
   private clock = gameState.clock;
 
-  private container = new THREE.Group();
+  private container = new Group();
   private animeController!: AnimationController;
   private currentActionName: string = "";
 
@@ -41,7 +45,7 @@ export class Player {
     return this.characterRotationTarget;
   }
 
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: Scene) {
     // 시각
 
     const { man } = Assets.get();
@@ -53,20 +57,20 @@ export class Player {
     this.mesh.position.y = -0.15;
 
     this.mesh.traverse((v) => {
-      if (v instanceof THREE.Object3D) {
+      if (v instanceof Object3D) {
         v.castShadow = true;
         v.receiveShadow = true;
       }
     });
 
-    // const geo = new THREE.BoxGeometry(0.5, 1, 0.5);
-    // const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    // this.mesh = new THREE.Mesh(geo, mat);
+    // const geo = new BoxGeometry(0.5, 1, 0.5);
+    // const mat = new MeshStandardMaterial({ color: 0xff0000 });
+    // this.mesh = new Mesh(geo, mat);
 
     scene.add(this.container);
     this.container.add(this.mesh);
 
-    this.rigidBody = PhysicsSystem.createPlayer(new THREE.Vector3(0, 4, 0));
+    this.rigidBody = PhysicsSystem.createPlayer(new Vector3(0, 4, 0));
     this.rigidBody.lockRotations(true, true);
 
     this.animeController = new AnimationController(this.mesh, gltf.animations);
@@ -174,9 +178,9 @@ export class Player {
     this.playerAnimation(delta);
   };
 
-  getPosition(): THREE.Vector3 {
+  getPosition(): Vector3 {
     const pos = this.rigidBody.translation();
-    return new THREE.Vector3(pos.x, pos.y, pos.z);
+    return new Vector3(pos.x, pos.y, pos.z);
   }
 
   // createTools() {
@@ -186,11 +190,11 @@ export class Player {
   //   const model = axe.value;
 
   //   const animation = model.animations[0];
-  //   const mesh = model.scene.children[0] as THREE.Mesh;
+  //   const mesh = model.scene.children[0] as Mesh;
 
-  //   this.mixer = new THREE.AnimationMixer(mesh);
+  //   this.mixer = new AnimationMixer(mesh);
   //   this.action = this.mixer.clipAction(animation);
-  //   this.action.setLoop(THREE.LoopOnce, 1);
+  //   this.action.setLoop(LoopOnce, 1);
 
   //   const size = getModelSize(mesh);
 

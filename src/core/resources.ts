@@ -1,4 +1,4 @@
-import type { T_LoadedResources } from "@/core/Loaders";
+import type { T_LoadedResources } from "@/systems/LoadSystem";
 
 export const resources = [
   /*  Models */
@@ -37,6 +37,7 @@ export const resources = [
 
   /* Texture Image */
   { name: "perlin_noise", path: "/images/Noise.png", type: "image" },
+  { name: "background", path: "/images/bg2.png", type: "image" },
 
   { name: "depth", path: "/images/depth.png", type: "image" },
   { name: "long_grass", path: "/images/longgrass.png", type: "image" },

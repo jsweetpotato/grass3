@@ -15,6 +15,20 @@
         <div>"Cat Cartoon Character" (https://skfb.ly/o7TVV) by hunnyduke is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).</div>
       </nav>
     </header>
-    <canvas id="game"></canvas>
+    <div class="container" id="loading">
+      <div class="cat-character">🐱</div>
+
+      <h1 class="welcome-text">고양이 동산에 오신 것을 환영합니다!</h1>
+
+      <progress id="loading-bar" class="cat-progress" value="0" max="100"></progress>
+
+      <button class="enter-btn" id="enter">
+        <span>입장하기</span>
+        <span class="paw">🐾</span>
+      </button>
+    </div>
+    <main>
+      <canvas id="game"></canvas>
+    </main>
   </body>
 </html>

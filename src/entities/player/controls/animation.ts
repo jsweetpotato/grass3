@@ -1,16 +1,16 @@
-import * as THREE from "three";
+import { AnimationAction, AnimationClip, AnimationMixer, LoopOnce, Object3D } from "three/webgpu";
 
 export class AnimationController {
-  private mixer: THREE.AnimationMixer;
-  private actions: Map<string, THREE.AnimationAction> = new Map();
-  private currentAction: THREE.AnimationAction | null = null;
+  private mixer: AnimationMixer;
+  private actions: Map<string, AnimationAction> = new Map();
+  private currentAction: AnimationAction | null = null;
   private timeScales: any = {
     run: 2,
     walk: 1.5
   };
 
-  constructor(model: THREE.Object3D, animations: THREE.AnimationClip[]) {
-    this.mixer = new THREE.AnimationMixer(model);
+  constructor(model: Object3D, animations: AnimationClip[]) {
+    this.mixer = new AnimationMixer(model);
 
     animations.forEach((clip) => {
       const action = this.mixer.clipAction(clip);
@@ -41,7 +41,7 @@ export class AnimationController {
     const action = this.actions.get(name);
     if (!action) return;
 
-    action.setLoop(THREE.LoopOnce, 1);
+    action.setLoop(LoopOnce, 1);
 
     action.clampWhenFinished = true;
 

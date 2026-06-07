@@ -1,14 +1,13 @@
-import * as THREE from "three/webgpu";
-
+import { InstancedMesh, Mesh, type Scene } from "three/webgpu";
 import { Assets } from "@/core/resources";
 
 export class SeaCreatures {
-  constructor(scene: THREE.Scene) {
+  constructor(scene: Scene) {
     const { seashell, starfish } = Assets.get();
 
-    seashell.scene.traverse((v) => (v instanceof THREE.InstancedMesh || v instanceof THREE.Mesh) && (v.receiveShadow = true));
+    seashell.scene.traverse((v) => (v instanceof InstancedMesh || v instanceof Mesh) && (v.receiveShadow = true));
 
-    starfish.scene.traverse((v) => (v instanceof THREE.InstancedMesh || v instanceof THREE.Mesh) && (v.receiveShadow = true));
+    starfish.scene.traverse((v) => (v instanceof InstancedMesh || v instanceof Mesh) && (v.receiveShadow = true));
 
     scene.add(seashell.scene, starfish.scene);
   }

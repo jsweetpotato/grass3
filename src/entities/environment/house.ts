@@ -1,12 +1,17 @@
-import * as THREE from "three/webgpu";
-import { Assets } from "@/core/resources";
-import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import { getModelSize, getWorldTransform } from "@/utils";
+import { Mesh, Object3D, type Scene } from "three/webgpu";
 import RAPIER from "@dimforge/rapier3d-compat";
+
+// managers
+import { Assets } from "@/core/resources";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
+
+import { getModelSize, getWorldTransform } from "@/utils";
+
+// types
+import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 export class House {
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     private gui: GUI
   ) {
     const { house, house_collider } = Assets.get();
@@ -21,7 +26,7 @@ export class House {
     colliderModel.rotateY(-Math.PI * 0.15);
 
     model.traverse((v) => {
-      if (v instanceof THREE.Object3D) {
+      if (v instanceof Object3D) {
         v.castShadow = true;
         v.receiveShadow = true;
       }
@@ -29,7 +34,7 @@ export class House {
 
     colliderModel.traverse((v) => {
       // Object3D 대신 Mesh를 확인해야 geometry에 접근하기 안전합니다.
-      if (v instanceof THREE.Mesh) {
+      if (v instanceof Mesh) {
         const sizes = getModelSize(v);
 
         if (!sizes) return;

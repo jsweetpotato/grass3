@@ -1,7 +1,8 @@
-import * as THREE from "three/webgpu";
+import { Clock } from "three/webgpu";
+
 class GameState {
   private _inventory = new Map();
-  private _clock = new THREE.Clock();
+  private _clock = new Clock();
 
   get inventory() {
     return this._inventory;

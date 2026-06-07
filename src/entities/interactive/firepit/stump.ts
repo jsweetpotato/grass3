@@ -2,12 +2,12 @@ import { Assets } from "@/core/resources";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
 import { getModelSize, getWorldTransform } from "@/utils";
 import RAPIER from "@dimforge/rapier3d-compat";
-import * as THREE from "three/webgpu";
+import type { Scene, Vector3 } from "three/webgpu";
 
 export class Stump {
   constructor(
-    private scene: THREE.Scene,
-    private zonePos: THREE.Vector3
+    private scene: Scene,
+    private zonePos: Vector3
   ) {
     //   const { stump } = Assets.get();
     //   const model = stump.scene;
@@ -15,7 +15,7 @@ export class Stump {
     //   this.scene.add(model);
     //   // this.create(model);
     // }
-    // create(mesh: THREE.Object3D) {
+    // create(mesh: Object3D) {
     //   const size = getModelSize(mesh);
     //   const { position, quaternion } = getWorldTransform(mesh);
     //   const colliderDesc = RAPIER.ColliderDesc.cylinder(size.y, size.x);

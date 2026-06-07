@@ -2,16 +2,16 @@ import { Assets } from "@/core/resources";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
 import { getModelSize } from "@/utils";
 import RAPIER from "@dimforge/rapier3d-compat";
-import * as THREE from "three/webgpu";
+import { type Scene, Vector3 } from "three/webgpu";
 
 export class Fishing {
-  private zonePos = new THREE.Vector3();
+  private zonePos = new Vector3();
 
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: Scene) {
     // const { bridge } = Assets.get();
     // const model = bridge.scene;
     // model.traverse((v) => {
-    //   if (v instanceof THREE.Object3D) {
+    //   if (v instanceof Object3D) {
     //     v.castShadow = true;
     //     v.receiveShadow = true;
     //   }

@@ -1,13 +1,16 @@
-import type { Player } from "@/entities/player/player";
-import { lerpAngle, smoothDampAngle } from "@/utils/math";
-import * as THREE from "three";
-import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import { inputManager } from "./InputSystem";
+import { PerspectiveCamera, Scene } from "three/webgpu";
+
+import { lerpAngle } from "@/utils/math";
+
+import { inputManager } from "@/systems/InputSystem";
+
 import { eventBus } from "@/core/EventBus";
+
+import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import type { State } from "@/main";
 
 export class CameraSystem {
-  private static _camera: THREE.PerspectiveCamera;
+  private static _camera: PerspectiveCamera;
   private static _currentYaw: number = 0;
   private static _yawVelocity = { value: 0 };
   private static _currentPitch: number = 0;
@@ -31,8 +34,8 @@ export class CameraSystem {
 
   private constructor() {}
 
-  public static init(scene: THREE.Scene, gui: GUI) {
-    this._camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+  public static init(scene: Scene, gui: GUI) {
+    this._camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 
     scene.add(this._camera);
 
@@ -43,7 +46,7 @@ export class CameraSystem {
     eventBus.on("lateUpdate", CameraSystem.update.bind(this));
   }
 
-  public static get camera(): THREE.PerspectiveCamera {
+  public static get camera(): PerspectiveCamera {
     return this._camera;
   }
 

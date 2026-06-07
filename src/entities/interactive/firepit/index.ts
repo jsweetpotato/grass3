@@ -1,4 +1,4 @@
-import * as THREE from "three/webgpu";
+import { Vector3, type Scene } from "three/webgpu";
 
 import { Stump } from "./stump";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
@@ -11,8 +11,8 @@ export default class Firepit {
   log!: Log;
   stump!: Stump;
 
-  constructor(private scene: THREE.Scene) {
-    const zonePos = new THREE.Vector3(20, 0.5, -8);
+  constructor(private scene: Scene) {
+    const zonePos = new Vector3(20, 0.5, -8);
 
     PhysicsSystem.createZone("chopping", zonePos, 5);
 

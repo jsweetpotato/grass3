@@ -1,8 +1,8 @@
 import { Assets } from "@/core/resources";
-import * as THREE from "three/webgpu";
+import type { Scene } from "three/webgpu";
 
 export class Cooking {
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: Scene) {
     // physicsSystem.createZone('cooking',)
 
     const { cooking } = Assets.get();

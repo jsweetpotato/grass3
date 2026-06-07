@@ -1,28 +1,29 @@
-import { Fn, mat2, cos, sin, convertColorSpace } from "three/tsl";
-import * as THREE from "three/webgpu";
+import { DataArrayTexture, InstancedBufferAttribute, LinearFilter, LinearMipMapLinearFilter, Mesh, Object3D, Quaternion, RepeatWrapping, RGBAFormat, UnsignedByteType, Vector3 } from "three/webgpu";
+import { Fn, mat2, cos, sin } from "three/tsl";
+
 import { mulberry32 } from "./math";
 
-export function getModelSize(mesh: THREE.Mesh) {
+export function getModelSize(mesh: Mesh) {
   mesh.geometry.computeBoundingBox();
   const boundingBox = mesh.geometry.boundingBox;
 
   if (!boundingBox) return;
 
-  const localSize = new THREE.Vector3();
+  const localSize = new Vector3();
   boundingBox.getSize(localSize);
 
   localSize.multiply(mesh.scale).multiplyScalar(0.5);
 
-  const centerOffset = new THREE.Vector3();
+  const centerOffset = new Vector3();
   boundingBox.getCenter(centerOffset);
   centerOffset.multiply(mesh.scale);
 
   return { localSize, centerOffset };
 }
 
-export function getWorldTransform(mesh: THREE.Object3D) {
-  const position = new THREE.Vector3();
-  const quaternion = new THREE.Quaternion();
+export function getWorldTransform(mesh: Object3D) {
+  const position = new Vector3();
+  const quaternion = new Quaternion();
   mesh.getWorldPosition(position);
   mesh.getWorldQuaternion(quaternion);
   return { position, quaternion };
@@ -31,8 +32,8 @@ export function getWorldTransform(mesh: THREE.Object3D) {
 export const rand = mulberry32(123456);
 
 export function genInstanceAttributes(count: number, size: number = 10) {
-  const positions = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
-  const metadata = new THREE.InstancedBufferAttribute(new Uint32Array(count), 1);
+  const positions = new InstancedBufferAttribute(new Float32Array(count * 3), 3);
+  const metadata = new InstancedBufferAttribute(new Uint32Array(count), 1);
 
   for (let i = 0; i < count; i++) {
     const x = rand() * size;
@@ -52,8 +53,8 @@ export function genInstanceAttributes(count: number, size: number = 10) {
 }
 
 export function genInstanceAttributes2(count: number, size: number = 10) {
-  const positions = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
-  const metadata = new THREE.InstancedBufferAttribute(new Uint32Array(count), 1);
+  const positions = new InstancedBufferAttribute(new Float32Array(count * 3), 3);
+  const metadata = new InstancedBufferAttribute(new Uint32Array(count), 1);
 
   // 💡 1. 군집(Cluster) 중심점 미리 만들기
   // 예: 전체 개수를 30으로 나누어 한 무리에 대략 30~50개씩 모이게 설정
@@ -228,13 +229,13 @@ export function createDataTextureArray(images: HTMLImageElement[]) {
   });
 
   // 4. DataArrayTexture 생성
-  const texture = new THREE.DataArrayTexture(data, width, height, depth);
-  texture.format = THREE.RGBAFormat;
-  texture.type = THREE.UnsignedByteType;
-  texture.minFilter = THREE.LinearMipMapLinearFilter; // 밉맵 사용 시
-  texture.magFilter = THREE.LinearFilter;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
+  const texture = new DataArrayTexture(data, width, height, depth);
+  texture.format = RGBAFormat;
+  texture.type = UnsignedByteType;
+  texture.minFilter = LinearMipMapLinearFilter; // 밉맵 사용 시
+  texture.magFilter = LinearFilter;
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
   texture.generateMipmaps = true; // 밉맵 생성
   texture.needsUpdate = true;
 

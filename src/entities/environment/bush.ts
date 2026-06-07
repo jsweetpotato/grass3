@@ -1,33 +1,36 @@
-import { eventBus } from "@/core/EventBus";
-import { Assets } from "@/core/resources";
-import { createDataTextureArray } from "@/utils";
-import { type TConfig } from "@/world/World";
-import { MeshSurfaceSampler } from "three/examples/jsm/Addons.js";
-import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+import { InstancedBufferAttribute, InstancedMesh, Mesh, MeshBasicNodeMaterial, MeshLambertNodeMaterial, NearestFilter, Object3D, PlaneGeometry, Sphere, Vector3, type Scene } from "three/webgpu";
 import {
   attribute,
   cameraProjectionMatrix,
   color,
   float,
   modelViewMatrix,
-  normalLocal,
   texture,
   uv,
   vec3,
   vec4,
   normalize,
   positionLocal,
-  Fn,
-  cos,
   sin,
   time,
   modelWorldMatrix,
   uniform,
   mix,
   cameraViewMatrix,
-  output
+  output,
+  round
 } from "three/tsl";
-import * as THREE from "three/webgpu";
+import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
+
+// managers
+import { eventBus } from "@/core/EventBus";
+import { Assets } from "@/core/resources";
+
+import { createDataTextureArray } from "@/utils";
+
+// types
+import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+import type { TConfig } from "@/world/World";
 
 const uniforms = {
   x: uniform(0.66),
@@ -44,7 +47,7 @@ const uniforms = {
 
 export class Bush3 {
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     private gui: GUI,
     private config: TConfig
   ) {
@@ -57,77 +60,117 @@ export class Bush3 {
     const { bush_test3, bush_alpha_2, bush_alpha_3, bush_alpha_4 } = Assets.get();
 
     const masks = createDataTextureArray([bush_alpha_2.image as HTMLImageElement, bush_alpha_3.image as HTMLImageElement, bush_alpha_4.image as HTMLImageElement]);
+    masks.generateMipmaps = false;
+    masks.minFilter = NearestFilter; // 또는 NearestFilter
+    masks.magFilter = NearestFilter;
+    masks.needsUpdate = true;
 
-    const mesh = bush_test3.scene.children[0] as THREE.Mesh;
-    const planegeo = new THREE.PlaneGeometry(2, 2);
-    const leafMat = new THREE.MeshLambertNodeMaterial({ transparent: false });
+    const mesh = bush_test3.scene.children[0] as Mesh;
+    const planegeo = new PlaneGeometry(2, 2);
+    const leafMat = new MeshLambertNodeMaterial();
+
+    leafMat.alphaTest = 0.5;
+    leafMat.transparent = false;
+    leafMat.precision = "lowp";
+    // leafMat.side = DoubleSide;
 
     const sampler = new MeshSurfaceSampler(mesh).build();
 
-    const countPerBush = 200;
+    const countPerBush = 500;
     const bushCount = Math.floor(treesData.length / 4);
-
     const totalCount = countPerBush * bushCount;
 
-    const instancedBush = new THREE.InstancedMesh(planegeo, leafMat, totalCount);
+    const instancedBush = new InstancedMesh(planegeo, leafMat, totalCount);
 
     const iPosArray = new Float32Array(totalCount * 3);
-    const iScaleArray = new Float32Array(totalCount);
     const iNormalArray = new Float32Array(totalCount * 3);
-    const iMaskArray = new Float32Array(totalCount * 3);
+    // (x: scale, y: mask, z: randomDepth)
+    const iDataArray = new Float32Array(totalCount * 3);
 
-    const dummyBush = new THREE.Object3D();
-    const positionL = new THREE.Vector3();
-    const normal = new THREE.Vector3();
+    const basePositions = new Float32Array(countPerBush * 3);
+    const baseNormals = new Float32Array(countPerBush * 3);
+
+    const _tempPos = new Vector3();
+    const _tempNormal = new Vector3();
+
+    for (let i = 0; i < countPerBush; i++) {
+      sampler.sample(_tempPos, _tempNormal);
+
+      basePositions[i * 3 + 0] = _tempPos.x;
+      basePositions[i * 3 + 1] = _tempPos.y;
+      basePositions[i * 3 + 2] = _tempPos.z;
+
+      baseNormals[i * 3 + 0] = _tempNormal.x;
+      baseNormals[i * 3 + 1] = _tempNormal.y;
+      baseNormals[i * 3 + 2] = _tempNormal.z;
+    }
 
     let globalIndex = 0;
 
     for (let b = 0; b < bushCount; b++) {
       const b4 = b * 4;
 
-      // trees.ts의 instancedTree 여러개 데이터 추출해서 dummyBush 포지션과 스케일링 적용
-      dummyBush.position.set(treesData[b4], treesData[b4 + 1], treesData[b4 + 2]);
-      dummyBush.scale.setScalar(treesData[b4 + 3] * 0.4);
-      dummyBush.updateMatrix();
+      const bushX = treesData[b4 + 0];
+      const bushY = treesData[b4 + 1];
+      const bushZ = treesData[b4 + 2];
+      const bushScale = treesData[b4 + 3] * 0.4;
 
-      // 2. 각 덤불 안에 80개의 잎사귀를 뿌립니다.
-      for (let l = 0; l < countPerBush; l++) {
-        sampler.sample(positionL, normal);
-        // 💡 핵심: 잎사귀의 로컬 위치를 덤불의 매트릭스에 곱해 '최종 위치'를 알아냅니다.
-        const leafPos = positionL.clone().applyMatrix4(dummyBush.matrix);
-        const leafNorm = normal.clone().transformDirection(dummyBush.matrix);
+      let addNum = 1;
 
-        // 개별 잎사귀 스케일 * 덤불 스케일
-        const leafScale = (Math.random() * 0.3 + 0.5) * dummyBush.scale.x;
+      for (let l = 0; l < countPerBush; l += addNum) {
+        addNum = Math.floor(Math.random() * 3) + 1;
+        if (l >= countPerBush) break;
 
-        iPosArray[globalIndex * 3 + 0] = leafPos.x;
-        iPosArray[globalIndex * 3 + 1] = leafPos.y;
-        iPosArray[globalIndex * 3 + 2] = leafPos.z;
+        const px = basePositions[l * 3 + 0];
+        const py = basePositions[l * 3 + 1];
+        const pz = basePositions[l * 3 + 2];
 
-        iNormalArray[globalIndex * 3 + 0] = leafNorm.x;
-        iNormalArray[globalIndex * 3 + 1] = leafNorm.y;
-        iNormalArray[globalIndex * 3 + 2] = leafNorm.z;
+        const nx = baseNormals[l * 3 + 0];
+        const ny = baseNormals[l * 3 + 1];
+        const nz = baseNormals[l * 3 + 2];
 
-        iScaleArray[globalIndex] = leafScale;
-        iMaskArray[globalIndex] = Math.floor(Math.random() * 4);
+        iPosArray[globalIndex * 3 + 0] = px * bushScale + bushX;
+        iPosArray[globalIndex * 3 + 1] = py * bushScale + bushY;
+        iPosArray[globalIndex * 3 + 2] = pz * bushScale + bushZ;
+
+        iNormalArray[globalIndex * 3 + 0] = nx;
+        iNormalArray[globalIndex * 3 + 1] = ny;
+        iNormalArray[globalIndex * 3 + 2] = nz;
+
+        iDataArray[globalIndex * 3 + 0] = (Math.random() * 0.4 + 0.4) * bushScale;
+        iDataArray[globalIndex * 3 + 1] = Math.floor(Math.random() * 4);
+        iDataArray[globalIndex * 3 + 2] = (Math.random() - 0.5) * 0.5;
 
         globalIndex++;
       }
     }
 
-    // 3. 완성된 데이터를 InstancedBufferAttribute로 꽂아줍니다!
-    planegeo.setAttribute("iPos", new THREE.InstancedBufferAttribute(iPosArray, 3));
-    planegeo.setAttribute("iScale", new THREE.InstancedBufferAttribute(iScaleArray, 1));
-    planegeo.setAttribute("iNormal", new THREE.InstancedBufferAttribute(iNormalArray, 3));
-    planegeo.setAttribute("iMask", new THREE.InstancedBufferAttribute(iMaskArray, 1));
+    const finalPosArray = iPosArray.slice(0, globalIndex * 3);
+    const finalDataArray = iDataArray.slice(0, globalIndex * 3);
+    const finalNormalArray = iNormalArray.slice(0, globalIndex * 3);
+
+    instancedBush.boundingSphere = new Sphere(new Vector3(0, 0, 0), 70);
+    instancedBush.frustumCulled = true;
+
+    instancedBush.castShadow = false;
+    instancedBush.receiveShadow = false;
+    instancedBush.count = globalIndex;
+
+    planegeo.setAttribute("iPos", new InstancedBufferAttribute(finalPosArray, 3));
+    planegeo.setAttribute("iData", new InstancedBufferAttribute(finalDataArray, 3));
+    planegeo.setAttribute("iNormal", new InstancedBufferAttribute(finalNormalArray, 3));
 
     this.scene.add(instancedBush);
     const iPos = attribute("iPos", "vec3");
-    const iScale = attribute("iScale", "float");
+    const iData = attribute("iData", "vec3");
     const iNormal = attribute("iNormal", "vec3");
-    const iMask = attribute("iMask", "float");
+    const iScale = iData.x;
+    const iMask = iData.y;
+    const iDepthOffset = iData.z;
 
-    const alpha = texture(masks, uv()).depth(iMask).step(0.5).toVar();
+    const safeMaskIndex = round(iMask);
+
+    const alpha = texture(masks, uv()).depth(safeMaskIndex).toVar();
     leafMat.opacityNode = alpha;
     leafMat.alphaTestNode = float(0.5);
 
@@ -145,53 +188,49 @@ export class Bush3 {
 
     // --------- Position Node -----------
 
-    // 💡 2. 잎사귀의 진짜 중심점 (월드 좌표)
-    // iPos는 이미 덤불 단위의 위치 계산이 끝난 값입니다.
-    // 여기에 InstancedMesh 덩어리 자체의 위치(modelMatrix)만 곱해주면 완벽한 월드 좌표가 됩니다.
-    const baseLeafCenter = modelWorldMatrix.mul(vec4(iPos, 1.0)).xyz;
-
     const windSpeed = time;
-    const wave1 = sin(windSpeed.add(baseLeafCenter.x.mul(0.5)).add(baseLeafCenter.z.mul(0.5)));
-    const wave2 = cos(windSpeed.mul(5).add(baseLeafCenter.x.mul(2)));
-    const windNoise = wave1.mul(0.4).add(wave2.mul(0.3));
+    const posOffset = iPos.x.add(iPos.z).mul(0.5);
+    const windNoise = sin(windSpeed.add(posOffset))
+      .mul(0.4)
+      .add(sin(windSpeed.mul(3.0).add(iPos.x)).mul(0.3));
 
     const heightMask = iPos.y;
-
     const windDirection = vec3(1.0, 0.2, 0.5).normalize();
     const windForce = windDirection.mul(windNoise).mul(heightMask).mul(0.2);
 
-    const leafCenterWorld = baseLeafCenter.add(windForce);
+    const leafCenterLocal = iPos.add(windForce);
+    const depthAdjustedCenter = leafCenterLocal.add(iNormal.mul(iDepthOffset));
 
-    // 💡 3. 카메라 Right / Up 벡터 추출 (무조건 카메라를 향하는 십자가 화살표)
-    const cameraRight = vec3(cameraViewMatrix[0].x, cameraViewMatrix[1].x, cameraViewMatrix[2].x);
-    const cameraUp = vec3(cameraViewMatrix[0].y, cameraViewMatrix[1].y, cameraViewMatrix[2].y);
+    const centerWorld = modelWorldMatrix.mul(vec4(depthAdjustedCenter, 1.0));
+    const centerView = cameraViewMatrix.mul(centerWorld);
 
-    // 💡 4. 월드 중심점(leafCenterWorld)에서, 카메라 방향으로 잎사귀 면(positionLocal)을 개별 스케일에 맞게 펼칩니다!
-    const vertexWorldPos = leafCenterWorld.add(cameraRight.mul(positionLocal.x).mul(iScale)).add(cameraUp.mul(positionLocal.y).mul(iScale));
+    const billboardViewPos = centerView.xyz.add(vec3(positionLocal.x.mul(iScale), positionLocal.y.mul(iScale), 0.0));
 
-    // 💡 5. 최종 화면 투영 (월드 -> 뷰 -> 클립)
-    leafMat.vertexNode = cameraProjectionMatrix.mul(cameraViewMatrix).mul(vec4(vertexWorldPos, 1.0));
+    leafMat.vertexNode = cameraProjectionMatrix.mul(vec4(billboardViewPos, 1.0));
 
-    instancedBush.frustumCulled = false;
+    const shadowProxyMesh = this.createShadowProxyMesh(mesh, bushCount, treesData);
 
-    const proxyMat = new THREE.MeshBasicNodeMaterial({
+    this.scene.add(shadowProxyMesh);
+  }
+
+  createShadowProxyMesh(mesh: Mesh, bushCount: number, treesData: number[]) {
+    const proxyMat = new MeshBasicNodeMaterial({
       colorWrite: false, // 💡 핵심: 화면에 색을 그리지 않음
       depthWrite: false // 💡 핵심: 깊이 버퍼에 쓰지 않음 (완전 투명화)
     });
 
     proxyMat.positionNode = positionLocal.add(vec3(sin(time.add(positionLocal.y.mul(20))), 0, 0));
 
-    const shadowProxyMesh = new THREE.InstancedMesh(mesh.geometry, proxyMat, bushCount);
-    const dummy = new THREE.Object3D();
+    const shadowProxyMesh = new InstancedMesh(mesh.geometry, proxyMat, bushCount);
+    const dummy = new Object3D();
     for (let i = 0; i < bushCount; i++) {
       dummy.position.set(treesData[i * 4], treesData[i * 4 + 1], treesData[i * 4 + 2]);
       dummy.scale.setScalar(treesData[i * 4 + 3] * 0.3);
       dummy.updateMatrix();
       shadowProxyMesh.setMatrixAt(i, dummy.matrix);
     }
-
+    // shadowProxyMesh.visible = false;
     shadowProxyMesh.castShadow = true;
-
-    this.scene.add(shadowProxyMesh);
+    return shadowProxyMesh;
   }
 }

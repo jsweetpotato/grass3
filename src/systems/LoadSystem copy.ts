@@ -1,11 +1,15 @@
-import { resources } from "@/core/resources";
-import * as THREE from "three";
-import { DRACOLoader, GLTFLoader, type GLTF } from "three/examples/jsm/Addons.js";
+import { AudioLoader, BoxGeometry, DataTexture, Loader, LoadingManager, Mesh, MeshBasicMaterial, RGBAFormat, Scene, TextureLoader, type Texture } from "three/webgpu";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+import { resources } from "@/core/resources";
+import { eventBus } from "@/core/EventBus";
 
 type T_ResultTypeMap = {
   object: GLTF;
-  image: THREE.Texture;
+  image: Texture;
   audio: AudioBuffer;
 };
 
@@ -15,31 +19,13 @@ export type T_LoadedResources = {
   [Item in T_ResourceItem as Item["name"]]: T_ResultTypeMap[Item["type"] & keyof T_ResultTypeMap];
 };
 
-export default class Loader {
+export default class LoadSystem {
   private items: Record<string, any> = {};
-  manager = new THREE.LoadingManager();
-  loaders: { [key: string]: THREE.Loader } = {};
+  manager = new LoadingManager();
+  loaders: { [key: string]: Loader } = {};
 
   constructor() {
-    const enter = document.querySelector("#enter") as HTMLElement;
-    const container = document.querySelector("#container") as HTMLElement;
-    const progress = document.querySelector("#progress") as HTMLProgressElement;
-
-    if (progress) {
-      this.manager.onProgress = (_, loaded, total) => {
-        progress.value = (loaded / total) * 100;
-      };
-    }
-
-    if (enter && container) {
-      this.manager.onLoad = () => {
-        enter.style.display = "flex";
-      };
-
-      enter.addEventListener("click", () => {
-        container.style.display = "none";
-      });
-    }
+    this.progressManager();
 
     const draco = new DRACOLoader(this.manager);
     draco.setDecoderPath("/draco/");
@@ -48,8 +34,8 @@ export default class Loader {
     gltfLoader.setDRACOLoader(draco);
     gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
-    const audioLoader = new THREE.AudioLoader(this.manager);
-    const textureLoader = new THREE.TextureLoader(this.manager);
+    const audioLoader = new AudioLoader(this.manager);
+    const textureLoader = new TextureLoader(this.manager);
 
     this.loaders = {
       glb: gltfLoader,
@@ -63,17 +49,45 @@ export default class Loader {
     };
   }
 
+  private progressManager() {
+    const enter = document.querySelector("#enter") as HTMLButtonElement;
+    const container = document.querySelector("#loading") as HTMLElement;
+    const progress = document.querySelector("#loading-bar") as HTMLProgressElement;
+
+    if (progress) {
+      this.manager.onProgress = (_, loaded, total) => {
+        progress.value = (loaded / total) * 100 - 10;
+      };
+    }
+
+    const buttonEvent = enter.addEventListener("click", () => {
+      progress.classList.add("hide");
+      container.classList.add("fade-out");
+      container.addEventListener("transitionend", () => {
+        container.style.display = "none";
+      });
+    });
+
+    eventBus.on("scene:ready", () => {
+      if (progress) progress.value = 100;
+
+      if (enter && container) {
+        enter.classList.add("show");
+      }
+    });
+  }
+
   private getFallback(type: string, name: string): any {
     console.warn(`Resource load failed: ${name} -> Using Fallback`);
 
     if (type === "texture" || type === "image") {
-      const fallbackTexture = new THREE.DataTexture(new Uint8Array([255, 0, 255, 255]), 1, 1, THREE.RGBAFormat);
+      const fallbackTexture = new DataTexture(new Uint8Array([255, 0, 255, 255]), 1, 1, RGBAFormat);
       fallbackTexture.needsUpdate = true;
       fallbackTexture.name = `fallback_${name}`;
       return fallbackTexture;
     } else if (type === "model" || type === "object") {
-      const scene = new THREE.Scene();
-      const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }));
+      const scene = new Scene();
+      const box = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial({ color: 0xff0000, wireframe: true }));
       box.name = `fallback_${name}`;
       scene.add(box);
       return { scene: scene, animations: [] } as unknown as GLTF;

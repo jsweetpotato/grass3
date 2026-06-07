@@ -1,7 +1,8 @@
-import * as THREE from "three/webgpu";
+import type { Mesh, Object3D, Scene, Vector3 } from "three/webgpu";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { getModelSize, getWorldTransform } from "@/utils";
+
 import { Assets } from "@/core/resources";
 import { PhysicsSystem } from "@/systems/PhysicsSystem";
 
@@ -20,13 +21,13 @@ export class FireWood {
   ];
 
   constructor(
-    private scene: THREE.Scene,
-    private zonePos: THREE.Vector3
+    private scene: Scene,
+    private zonePos: Vector3
   ) {
     const { firewood } = Assets.get();
 
     const model = firewood.scene;
-    this.size = getModelSize(model.children[0] as THREE.Mesh);
+    this.size = getModelSize(model.children[0] as Mesh);
     for (let i = 0; i < model.children.length; i++) this.create(model.children[i]);
   }
 
@@ -34,7 +35,7 @@ export class FireWood {
     // eventBus.on("firepit:firewood:spon", this.spon);
   }
 
-  create(mesh: THREE.Object3D) {
+  create(mesh: Object3D) {
     // 메쉬 변질 방지용
     const copiedMesh = mesh.clone();
     copiedMesh.position.add(this.zonePos);

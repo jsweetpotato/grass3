@@ -1,16 +1,18 @@
-import { data } from "@/core/Data";
-import { Assets } from "@/core/resources";
-import { PhysicsSystem } from "@/systems/PhysicsSystem";
-import { getModelSize, getWorldTransform } from "@/utils";
+import { Mesh, Scene, Vector3 } from "three/webgpu";
 import RAPIER from "@dimforge/rapier3d-compat";
 
-import * as THREE from "three/webgpu";
+import { data } from "@/core/Data";
+import { Assets } from "@/core/resources";
+
+import { PhysicsSystem } from "@/systems/PhysicsSystem";
+
+import { getModelSize, getWorldTransform } from "@/utils";
 
 export class Bridge {
-  // private zonePos = new THREE.Vector3();
-  private center = new THREE.Vector3();
+  // private zonePos = new Vector3();
+  private center = new Vector3();
 
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: Scene) {
     const { bridge, bridge_collider } = Assets.get();
 
     const model = bridge.scene;
@@ -18,14 +20,14 @@ export class Bridge {
     scene.add(model);
 
     model.traverse((v) => {
-      if (v instanceof THREE.Mesh) {
+      if (v instanceof Mesh) {
         v.castShadow = true;
         v.receiveShadow = true;
       }
     });
 
     bridge_collider.scene.traverse((v) => {
-      if (v instanceof THREE.Mesh) {
+      if (v instanceof Mesh) {
         const sizes = getModelSize(v);
 
         if (!sizes) return;

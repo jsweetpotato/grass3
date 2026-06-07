@@ -1,18 +1,19 @@
-import * as THREE from "three/webgpu";
+import { InstancedMesh, Mesh, MeshLambertNodeMaterial, type Scene } from "three/webgpu";
+import { cameraProjectionMatrix, cameraViewMatrix, color, float, mix, modelWorldMatrix, positionLocal, sin, texture, time, uv, vec3, vec4 } from "three/tsl";
 
 import { Assets } from "@/core/resources";
+
 import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import { cameraProjectionMatrix, cameraViewMatrix, color, float, mix, modelWorldMatrix, positionLocal, sin, texture, time, uv, vec3, vec4 } from "three/tsl";
 import type { TConfig } from "@/world/World";
 
 export class AGrass {
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     private gui: GUI,
     private config: TConfig
   ) {
     const { arround_wood_grass } = Assets.get();
-    const material = new THREE.MeshLambertNodeMaterial();
+    const material = new MeshLambertNodeMaterial();
     material.colorNode = mix(config.COLOR.GH, color("yellowgreen"), uv().y);
 
     // 💡 1. 덤불 인스턴스의 '월드 기준 중심 위치'를 가져옵니다.
@@ -38,7 +39,7 @@ export class AGrass {
 
     const meshs = arround_wood_grass.scene;
     meshs.children.forEach((v) => {
-      if (v instanceof THREE.Mesh || v instanceof THREE.InstancedMesh) {
+      if (v instanceof Mesh || v instanceof InstancedMesh) {
         v.material = material;
         v.castShadow = true;
       }
@@ -50,12 +51,12 @@ export class AGrass {
 
 export class Flowers {
   constructor(
-    private scene: THREE.Scene,
+    private scene: Scene,
     private gui: GUI
   ) {
     const { flowers, flower_alpha } = Assets.get();
 
-    const material = new THREE.MeshLambertNodeMaterial({ transparent: false });
+    const material = new MeshLambertNodeMaterial({ transparent: false });
     const map = texture(flower_alpha, uv()).b.toVar();
     material.opacityNode = map.step(0.4);
     material.alphaTestNode = float(0.5);
@@ -64,7 +65,7 @@ export class Flowers {
     const meshs = flowers.scene;
 
     meshs.children.forEach((v) => {
-      if (v instanceof THREE.Mesh || v instanceof THREE.InstancedMesh) {
+      if (v instanceof Mesh || v instanceof InstancedMesh) {
         v.material = material;
         v.castShadow = true;
         material.castShadowNode = map;

@@ -1,13 +1,13 @@
-import * as THREE from "three";
+import type { Vector3 } from "three/webgpu";
 
 class SurfaceManager {
   // RGB를 모두 읽어야 하므로 원본 RGBA 배열(Uint8ClampedArray)을 그대로 사용합니다.
   private surfaceData: Uint8ClampedArray | null = null;
   private mapWidth = 0;
   private mapHeight = 0;
-  
+
   private worldSize = 1000;
-  private invWorldSize = 0.001; 
+  private invWorldSize = 0.001;
 
   constructor(maskImageElement: HTMLImageElement, worldSize = 1000) {
     const width = maskImageElement.width;
@@ -46,7 +46,7 @@ class SurfaceManager {
     const index = (pixelY * this.mapWidth + pixelX) * 4;
 
     // R, G, B 채널 값을 각각 가져옵니다.
-    const r = this.surfaceData[index];     // Red: 잔디
+    const r = this.surfaceData[index]; // Red: 잔디
     const g = this.surfaceData[index + 1]; // Green: 모래
     const b = this.surfaceData[index + 2]; // Blue: 바다
 
@@ -57,11 +57,11 @@ class SurfaceManager {
       return "sea";
     } else {
       // Green이 가장 높거나, 색이 모호할 때는 기본값으로 모래를 반환합니다.
-      return "sand"; 
+      return "sand";
     }
   }
 
-  playFootstepSound(playerPos: THREE.Vector3) {
+  playFootstepSound(playerPos: Vector3) {
     const surface = this.getSurfaceType(playerPos.x, playerPos.z);
 
     if (surface === "grass") {

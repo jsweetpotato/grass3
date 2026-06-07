@@ -1,33 +1,48 @@
-import "@/systems/lodSystem";
-import * as THREE from "three/webgpu";
-import { OrbitControls, TessellateModifier } from "three/examples/jsm/Addons.js";
-import { Player } from "./entities/player/player";
-import { eventBus } from "./core/EventBus";
-import { CameraSystem } from "./systems/CameraSystem";
-import Loader from "./core/Loaders";
+import {
+  ACESFilmicToneMapping,
+  AgXToneMapping,
+  BasicShadowMap,
+  CineonToneMapping,
+  Color,
+  LinearToneMapping,
+  NeutralToneMapping,
+  NoToneMapping,
+  PCFShadowMap,
+  PCFSoftShadowMap,
+  PostProcessing,
+  ReinhardToneMapping,
+  Scene,
+  Vector3,
+  VSMShadowMap,
+  WebGPURenderer,
+  type Renderer
+} from "three/webgpu";
 
-import Firepit from "./entities/interactive/firepit";
-import { World } from "./world/World";
-import { Cooking } from "./entities/interactive/cooking";
-import { Fishing } from "./entities/interactive/fishing";
-import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import { Assets } from "./core/resources";
-import { PhysicsSystem } from "./systems/PhysicsSystem";
-import { Lights } from "./world/Lights";
-import { gameState } from "./state/gameState";
-import { lodManager } from "@/systems/lodSystem";
-import { Effects } from "./world/Effects";
-import { Test } from "./world/Test";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-// import { Fishing } from "./features/fishing";
 
+import { eventBus } from "@/core/EventBus";
+import { Assets } from "@/core/resources";
+
+import { PhysicsSystem } from "@/systems/PhysicsSystem";
+import { CameraSystem } from "@/systems/CameraSystem";
+import LoadSystem from "@/systems/LoadSystem";
+
+import { Player } from "@/entities/player/player";
+import { World } from "@/world/World";
+import { Lights } from "@/world/Lights";
+import { Effects } from "@/world/Effects";
+
+import { gameState } from "@/state/gameState";
+
+import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 class Game {
   canvas!: HTMLCanvasElement;
-  scene!: THREE.Scene;
+  scene!: Scene;
   controls!: OrbitControls;
-  renderer!: THREE.Renderer;
-  postProcessing!: THREE.PostProcessing;
-  firepit!: Firepit;
+  renderer!: Renderer;
+  postProcessing!: PostProcessing;
+
   player!: Player;
   gui!: GUI;
 
@@ -36,8 +51,6 @@ class Game {
   currentZone = "";
 
   clock = gameState.clock;
-
-  private keys: { [key: string]: boolean } = {};
 
   // 3rd person controller variables
   isRunning = false;
@@ -53,7 +66,7 @@ class Game {
     this.initControls();
 
     // Asset 등록
-    Assets.init(await new Loader().start());
+    Assets.init(await new LoadSystem().start());
 
     // Physics
     await PhysicsSystem.init(this.scene, this.gui);
@@ -69,13 +82,13 @@ class Game {
     new World(this.scene, this.gui);
     // new Fishing(this.scene);
 
-    // new Test(this.scene, this.gui);
-
     // Player
     this.player = new Player(this.scene);
     this.gui.close();
 
     await this.renderer.init();
+
+    eventBus.emit("scene:ready");
 
     this.renderer.setAnimationLoop(this.animate);
 
@@ -83,14 +96,14 @@ class Game {
   }
 
   initEffect() {
-    const postProcessing = new THREE.PostProcessing(this.renderer);
+    const postProcessing = new PostProcessing(this.renderer);
     this.postProcessing = postProcessing;
     new Effects(this.scene, CameraSystem.camera, postProcessing, this.gui);
   }
 
   initScene() {
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x87ceeb);
+    this.scene = new Scene();
+    this.scene.background = new Color(0x87ceeb);
   }
 
   initControls() {
@@ -110,8 +123,6 @@ class Game {
       statDom.style.display = "none";
     }
 
-    // ---------------------------------------------------
-    // 💡 보너스: 새로고침 없이 주소창만 바꿔도 즉시 반영되게 만들기
     window.addEventListener("hashchange", () => {
       if (window.location.hash === "#debug") {
         this.gui.show();
@@ -124,36 +135,37 @@ class Game {
   }
 
   initRenderer() {
-    this.renderer = new THREE.WebGPURenderer({
+    this.renderer = new WebGPURenderer({
       canvas: this.canvas,
       antialias: true,
-      alpha: true
+      alpha: true,
+      logarithmicDepthBuffer: false
     });
 
     this.renderer.shadowMap.enabled = true;
     this.canvas = this.renderer.domElement;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = ACESFilmicToneMapping;
     // this.renderer.autoClear = false;
 
     this.gui.add(this.renderer, "toneMapping", {
-      ACES: THREE.ACESFilmicToneMapping,
-      none: THREE.NoToneMapping,
-      Cineon: THREE.CineonToneMapping,
-      Neutral: THREE.NeutralToneMapping,
-      Linear: THREE.LinearToneMapping,
-      Reinhard: THREE.ReinhardToneMapping,
-      AgX: THREE.AgXToneMapping
+      ACES: ACESFilmicToneMapping,
+      none: NoToneMapping,
+      Cineon: CineonToneMapping,
+      Neutral: NeutralToneMapping,
+      Linear: LinearToneMapping,
+      Reinhard: ReinhardToneMapping,
+      AgX: AgXToneMapping
     });
 
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = PCFShadowMap;
 
     this.gui.add(this.renderer.shadowMap, "type", {
-      basic: THREE.BasicShadowMap,
-      VSM: THREE.VSMShadowMap,
-      PCF: THREE.PCFShadowMap,
-      PCFSoft: THREE.PCFSoftShadowMap
+      basic: BasicShadowMap,
+      VSM: VSMShadowMap,
+      PCF: PCFShadowMap,
+      PCFSoft: PCFSoftShadowMap
     });
   }
 
@@ -181,5 +193,5 @@ new Game().init();
 
 export interface State {
   delta: number;
-  playerPos: THREE.Vector3;
+  playerPos: Vector3;
 }
