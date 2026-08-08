@@ -17,10 +17,18 @@ export class Lights {
   constructor(
     private scene: Scene,
     private camera: Camera,
-    private gui: GUI
+    private gui: GUI,
   ) {
     // Lights
-    this.scene.add(new AmbientLight(0xffff00, 0.4));
+
+    const lightGUI = gui.addFolder("Lights");
+
+    const ambientGUI = lightGUI.addFolder("Ambient Light");
+    const ambientLight = new AmbientLight("#FFFDEC", 1);
+    ambientGUI.add(ambientLight, "intensity", 0, 2, 0.01);
+    ambientGUI.addColor(ambientLight, "color");
+
+    this.scene.add(ambientLight);
 
     // const direcLight = new DirectionalLight("#fffbbd", 4);
     // const dirLHelper = new DirectionalLightHelper(direcLight);
@@ -63,67 +71,60 @@ export class Lights {
 
     const config = {
       lightFar: 1000,
-      lightNear: 1,
-      shadowBias: -0.0001,
-      lightDirection: { x: -1, y: -1, z: -1 }
+      lightNear: 0.1,
+      shadowBias: 0.01,
+      lightDirection: new Vector3(-4.06, -8.44, -4.92),
     };
 
-    const CSMGUI = gui.addFolder("csm");
-
-    CSMGUI.add(config, "lightNear", 0, 10, 0.01).onFinishChange((v) => {
-      this.csm.lightNear = v;
-      this.csm.updateFrustums();
-    });
-    CSMGUI.add(config, "lightFar", 100, 2000, 0.1).onFinishChange((v) => {
-      this.csm.lightFar = v;
-      this.csm.updateFrustums();
-    });
-    CSMGUI.add(config, "shadowBias", -0.1, 0.1, 0.000001).onFinishChange((v) => {
-      this.csm.shadowBias = v;
-      this.csm.updateFrustums();
-    });
-    CSMGUI.add(config.lightDirection, "x", -10, 10, 1).onFinishChange((v) => {
-      config.lightDirection.x = v;
-
-      this.csm.lightDirection = lightDir.copy(config.lightDirection).normalize();
-    });
-    CSMGUI.add(config.lightDirection, "y", -10, 10, 1).onFinishChange((v) => {
-      config.lightDirection.y = v;
-
-      this.csm.lightDirection = lightDir.copy(config.lightDirection).normalize();
-    });
-    CSMGUI.add(config.lightDirection, "z", -10, 10, 1).onFinishChange((v) => {
-      config.lightDirection.z = v;
-
-      this.csm.lightDirection = lightDir.copy(config.lightDirection).normalize();
-    });
-
     this.csm = new CSM({
-      maxFar: 100,
+      maxFar: 90,
       cascades: 3,
       mode: "practical",
       parent: scene,
       shadowMapSize: 2048,
-      lightDirection: new Vector3(-1, -1, -1).normalize(), // 태양의 방향
+      lightDirection: lightDir.copy(config.lightDirection).normalize(), // 태양의 방향
       camera: camera, // 메인 카메라 기준,
-      shadowBias: -0.0001,
+      shadowBias: -0.00004,
       lightNear: 0.1,
       lightFar: 3000,
-      lightIntensity: 1.5
+      lightIntensity: 0.8,
     });
 
     this.csm.fade = true;
 
-    const color = new Color("white");
-
-    this.csm.lights.forEach((v) => {
-      console.log(v);
-      v.color = color;
-    });
-
     eventBus.on("update", () => {
       this.csm.update();
     });
+
+    const CSMGUI = lightGUI.addFolder("CSM Light");
+
+    CSMGUI.add(config.lightDirection, "x", -10, 10, 0.01).onFinishChange(
+      (v) => {
+        config.lightDirection.x = v;
+        this.csm.lightDirection = lightDir
+          .copy(config.lightDirection)
+          .normalize();
+      },
+    );
+    CSMGUI.add(config.lightDirection, "y", -10, 10, 0.01).onFinishChange(
+      (v) => {
+        config.lightDirection.y = v;
+        this.csm.lightDirection = lightDir
+          .copy(config.lightDirection)
+          .normalize();
+      },
+    );
+    CSMGUI.add(config.lightDirection, "z", -10, 10, 0.01).onFinishChange(
+      (v) => {
+        config.lightDirection.z = v;
+        this.csm.lightDirection = lightDir
+          .copy(config.lightDirection)
+          .normalize();
+      },
+    );
+    CSMGUI.addColor(this.csm.lights[0], "color").name("light 1");
+    CSMGUI.addColor(this.csm.lights[1], "color").name("light 2");
+    CSMGUI.addColor(this.csm.lights[2], "color").name("light 3");
   }
 
   update({ delta, playerPos }: State) {

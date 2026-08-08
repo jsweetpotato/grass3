@@ -25,6 +25,7 @@ export class Rocks {
       if (!(v instanceof Object3D) || v instanceof Group) return;
 
       v.receiveShadow = true;
+      v.castShadow = true;
 
       if (v instanceof InstancedMesh) {
         v.updateMatrixWorld();

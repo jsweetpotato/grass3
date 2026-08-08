@@ -6,6 +6,7 @@ import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { resources } from "@/core/resources";
 import { eventBus } from "@/core/EventBus";
+import { bindLoading, finishLoading } from "@/systems/loading";
 
 type T_ResultTypeMap = {
   object: GLTF;
@@ -50,31 +51,8 @@ export default class LoadSystem {
   }
 
   private progressManager() {
-    const enter = document.querySelector("#enter") as HTMLButtonElement;
-    const container = document.querySelector("#loading") as HTMLElement;
-    const progress = document.querySelector("#loading-bar") as HTMLProgressElement;
-
-    if (progress) {
-      this.manager.onProgress = (_, loaded, total) => {
-        progress.value = (loaded / total) * 100 - 10;
-      };
-    }
-
-    const buttonEvent = enter.addEventListener("click", () => {
-      progress.classList.add("hide");
-      container.classList.add("fade-out");
-      container.addEventListener("transitionend", () => {
-        container.style.display = "none";
-      });
-    });
-
-    eventBus.on("scene:ready", () => {
-      if (progress) progress.value = 100;
-
-      if (enter && container) {
-        enter.classList.add("show");
-      }
-    });
+    bindLoading(this.manager);
+    eventBus.on("scene:ready", finishLoading);
   }
 
   private getFallback(type: string, name: string): any {
@@ -114,8 +92,9 @@ export default class LoadSystem {
 
       const p = loader
         .loadAsync(item.path)
-        .then((data) => {
+        .then(async (data) => {
           this.items[item.name] = data;
+          await new Promise<void>((r) => requestAnimationFrame(() => r()));
         })
         .catch((err) => {
           console.error(`Load Error (${item.name}):`, err);

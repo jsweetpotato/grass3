@@ -40,6 +40,10 @@ export const resources = [
   { name: "background", path: "/images/bg2.png", type: "image" },
 
   { name: "depth", path: "/images/depth.png", type: "image" },
+  { name: "water_mask_rock", path: "/images/water_mask_rock.png", type: "image" },
+  { name: "water_mask", path: "/images/water_mask.png", type: "image" },
+  { name: "water_mask2", path: "/images/water_mask2.png", type: "image" },
+  { name: "water_mask3", path: "/images/water_mask3.png", type: "image" },
   { name: "long_grass", path: "/images/longgrass.png", type: "image" },
   { name: "willow_leaf", path: "/images/leaf7.png", type: "image" },
   { name: "mask", path: "/images/mask.png", type: "image" },

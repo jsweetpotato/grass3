@@ -11,8 +11,6 @@ gl_FragColor = texture(atlas, vec3(vUv, vTextureId));
 - [x] grass chunk 단위로 분리
 - [x] LOD 적용
 
-## 그래픽
-
 - [ ] 물 glsl 코드 좀더 예쁘게 변경(마스크 먼저 변경 후 작업)
 - [ ] 전체 환경 맵에 디테일한 오브젝트를 넣어서 꽉 차 보이게 만들기
 
@@ -34,7 +32,7 @@ ground에서 trimesh로 생성한 collider가 heightfield보다 더 캐릭터 �
     - [x] 다리 기둥 위치 데이터 가져와서 기둥 심기
     - [x] 상판
 
-  - [ ] 이동 범위 제한 박스
+  - [ ] 이동 범위 제한
 
 ---
 
@@ -54,8 +52,18 @@ ground에서 trimesh로 생성한 collider가 heightfield보다 더 캐릭터 �
 - [x] bush 최적화 및 오류 수정 (중복된 포지션에 생성된 plane제거: z buffer 튀임 현상 제거)
 - [ ] 캐릭터 저사양 기기 그림자 오류 수정 (bias나 premism, 아님 가짜 셰도우를 만들던지
       효율 좋은걸로 수정)
-- [ ] 마스크 변경 실시 악
+- [ ] terrain 마스크 변경 -> water에 적용 -> water shader 수정
+  - 캐릭터 수면 물 기포 shader
+  - 파도 shader 수정
 
 오늘 할일 4 [26.03.31]
 
-- [ ] csm 그림자 오류 수정
+- [ ] ~~ csm 그림자 오류 수정 ~~
+
+오늘 할일 5 [26.06.17]
+
+- [ ] information 모달 추가.
+  - 프로젝트 설명
+  - 캐릭터 및 카메라 조작
+  - 3d object 라이센스 표시
+  - 디버깅 모드 온 오프

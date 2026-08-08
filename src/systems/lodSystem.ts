@@ -5,10 +5,9 @@ export class LODSystem {
   private CHUNK_CELL = { x: 5, z: 4 };
   private CHUNK_SIZE = 23;
   private OFFSET = { x: 0, z: -10 };
-  public chunks = new Set<Chunk>(); // 생성된 청크들을 담아둘 배열
+  public chunks = new Set<Chunk>();
 
   constructor() {
-    // 맵 전체 크기의 절반 (기준점을 0,0,0 정중앙에 맞추기 위함)
     const halfX = (this.CHUNK_SIZE * this.CHUNK_CELL.x) / 2;
     const halfZ = (this.CHUNK_SIZE * this.CHUNK_CELL.z) / 2;
     // 청크의 꼭짓점이 아닌 '중앙'을 잡기 위한 오프셋 (절반 크기)
@@ -16,14 +15,12 @@ export class LODSystem {
 
     for (let i = 0; i < this.CHUNK_CELL.x; i++) {
       for (let j = 0; j < this.CHUNK_CELL.z; j++) {
-        // x, z 좌표 계산 (-24 ~ +24 사이로 격자 배치)
         const x = i * this.CHUNK_SIZE - halfX + offset + this.OFFSET.x;
         const z = j * this.CHUNK_SIZE - halfZ + offset + this.OFFSET.z;
 
         const center = new Vector3(x, 0, z);
-        const id = `chunk_${i}_${j}`; // 고유 ID 부여 (예: chunk_0_0)
+        const id = `chunk_${i}_${j}`;
 
-        // 청크 생성 후 배열에 저장
         const chunk = new Chunk(id, center);
         this.chunks.add(chunk);
       }
@@ -34,12 +31,12 @@ export class LODSystem {
     });
   }
 
-  // 매 프레임(animate)마다 호출할 업데이트 함수
   update(cameraPosition: Vector3) {
     for (const chunk of this.chunks) {
       chunk.checkLOD(cameraPosition);
     }
   }
+
   get offset() {
     return this.OFFSET;
   }
@@ -57,31 +54,27 @@ class Chunk {
   public id: string;
   private center: Vector3;
 
-  private currentLevel: string = ""; // 현재 LOD 상태 저장용
+  private currentLevel: string = "";
 
   constructor(id: string, center: Vector3) {
     this.id = id;
     this.center = center;
   }
 
-  // 통합 LOD 관리자 함수
   checkLOD(cameraPosition: Vector3) {
     const dist = this.center.distanceTo(cameraPosition);
     let newLevel = "";
 
-    // 거리에 따른 레벨 결정
     if (dist < 40) newLevel = "level_1";
     else if (dist >= 40 && dist < 100) newLevel = "level_2";
     else newLevel = "level_3";
 
-    // 💡 핵심 최적화: 기존 레벨과 달라졌을 때만(상태 변화) 이벤트 발생!
     if (this.currentLevel !== newLevel) {
       this.currentLevel = newLevel;
 
-      // 어떤 청크가 어떤 레벨로 변했는지 객체로 묶어서 전달
       eventBus.emit("lod_changed", {
         chunkId: this.id,
-        level: this.currentLevel
+        level: this.currentLevel,
       });
     }
   }

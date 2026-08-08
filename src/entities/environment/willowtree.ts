@@ -1,5 +1,33 @@
-import { BackSide, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshLambertNodeMaterial, RepeatWrapping, type Scene } from "three/webgpu";
-import { round, attribute, float, div, uv, vec2, mod, mul, sub, add, texture, cameraProjectionMatrix, modelViewMatrix, vec3, vec4, normalize, positionLocal, color } from "three/tsl";
+import {
+  BackSide,
+  BufferGeometry,
+  Float32BufferAttribute,
+  Group,
+  Mesh,
+  MeshLambertNodeMaterial,
+  RepeatWrapping,
+  type Scene,
+} from "three/webgpu";
+import {
+  round,
+  attribute,
+  float,
+  div,
+  uv,
+  vec2,
+  mod,
+  mul,
+  sub,
+  add,
+  texture,
+  cameraProjectionMatrix,
+  modelViewMatrix,
+  vec3,
+  vec4,
+  normalize,
+  positionLocal,
+  color,
+} from "three/tsl";
 
 // managers
 import { Assets } from "@/core/resources";
@@ -10,7 +38,7 @@ import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 export class WillowTree {
   constructor(
     private scene: Scene,
-    gui: GUI
+    gui: GUI,
   ) {
     const { willow_tree, willow_leaf } = Assets.get();
 
@@ -25,9 +53,11 @@ export class WillowTree {
     group.add(...foliages);
 
     const scale = {
-      scalar: 1
+      scalar: 1,
     };
-    gui.add(scale, "scalar", 0, 1, 0.01).onFinishChange((v) => group.scale.setScalar(v));
+    gui
+      .add(scale, "scalar", 0, 1, 0.01)
+      .onFinishChange((v) => group.scale.setScalar(v));
 
     group.position.set(-32, -0.8, -12);
     gui.add(group.position, "x", -100, 100, 0.1).name("treeX");
@@ -36,9 +66,11 @@ export class WillowTree {
 
     scene.add(group);
 
-    const material = new MeshLambertNodeMaterial({ transparent: false, side: BackSide });
+    const material = new MeshLambertNodeMaterial({
+      transparent: false,
+      side: BackSide,
+    });
 
-    // 나뭇잎 최적화 필수
     const indexNode = round(attribute("aUVIndex"));
     const gridSize = float(3.0); // 3x3 그리드
     const gridCols = float(1.5);
@@ -71,9 +103,10 @@ export class WillowTree {
 
     // const inflation = normalLocal.mul(uniforms.inflate);
 
-    const finalViewPos = centerView.add(vec4(vec3(uvOffset.mul(size).add(0.5 /** inflation */), 0.0), 0.0)).toVar();
+    const finalViewPos = centerView
+      .add(vec4(vec3(uvOffset.mul(size).add(0.5 /** inflation */), 0.0), 0.0))
+      .toVar();
 
-    // E. 최종 위치를 프로젝션 매트릭스로 변환하여 반환
     material.vertexNode = cameraProjectionMatrix.mul(finalViewPos);
 
     material.colorNode = color("yellowgreen");

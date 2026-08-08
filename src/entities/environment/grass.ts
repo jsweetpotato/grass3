@@ -1,4 +1,16 @@
-import { BufferGeometry, Color, ConstNode, InstancedMesh, Mesh, MeshLambertNodeMaterial, NodeMaterial, PlaneGeometry, RepeatWrapping, Scene, UniformNode } from "three/webgpu";
+import {
+  BufferGeometry,
+  Color,
+  ConstNode,
+  InstancedMesh,
+  Mesh,
+  MeshLambertNodeMaterial,
+  NodeMaterial,
+  PlaneGeometry,
+  RepeatWrapping,
+  Scene,
+  UniformNode,
+} from "three/webgpu";
 import {
   attribute,
   bitAnd,
@@ -20,7 +32,7 @@ import {
   uv,
   vec2,
   vec3,
-  vec4
+  vec4,
 } from "three/tsl";
 
 import { genInstanceAttributes, genInstanceAttributes2 } from "@/utils/index";
@@ -40,38 +52,58 @@ interface ChunkMeshes {
   level_2: InstancedMesh; // 중간 거리 (Low Poly)
 }
 
-const swayLevel1 = Fn(([rotation, scale, iWPos, uvY, timer, playerPos]: [rotation: Node, scale: Node, iWPos: Node, uvY: Node, timer: Node, playerPos: Node]) => {
-  const bigSway = sin(timer.add(iWPos.x.mul(0.1)).add(iWPos.z.mul(0.1)));
-  const microSway = sin(timer.mul(3.0).add(iWPos.x.mul(2.0))).mul(0.01);
-  const totalWind = bigSway.add(microSway).mul(uvY);
-  const wind = vec3(totalWind, 0, 0);
+const swayLevel1 = Fn(
+  ([rotation, scale, iWPos, uvY, timer, playerPos]: [
+    rotation: Node,
+    scale: Node,
+    iWPos: Node,
+    uvY: Node,
+    timer: Node,
+    playerPos: Node,
+  ]) => {
+    const bigSway = sin(timer.add(iWPos.x.mul(0.1)).add(iWPos.z.mul(0.1)));
+    const microSway = sin(timer.mul(3.0).add(iWPos.x.mul(2.0))).mul(0.01);
+    const totalWind = bigSway.add(microSway).mul(uvY);
+    const wind = vec3(totalWind, 0, 0);
 
-  // 1. 플레이어에서 풀까지의 방향 벡터 구하기
-  const forceVec = iWPos.sub(playerPos);
-  const distSq = forceVec.dot(forceVec);
+    // 1. 플레이어에서 풀까지의 방향 벡터 구하기
+    const forceVec = iWPos.sub(playerPos);
+    const distSq = forceVec.dot(forceVec);
 
-  // 2. 영향력 계산 (가까울수록 세게, 멀어지면 0)
-  // 2유닛 안으로 들어오면 밀어내기 시작합니다.
-  const influence = distSq.smoothstep(0.0, 2.5).oneMinus();
+    // 2. 영향력 계산 (가까울수록 세게, 멀어지면 0)
+    // 2유닛 안으로 들어오면 밀어내기 시작합니다.
+    const influence = distSq.smoothstep(0.0, 2.5).oneMinus();
 
-  // 3. 옆으로 눕히는 힘 계산 (바닥 방향으로 살짝 누르기 위해 y값을 조절할 수도 있음)
-  const pushOffset = forceVec.mul(influence).mul(uv().y);
+    // 3. 옆으로 눕히는 힘 계산 (바닥 방향으로 살짝 누르기 위해 y값을 조절할 수도 있음)
+    const pushOffset = forceVec.mul(influence).mul(uv().y);
 
-  // 최종 위치 = 원래위치 + 바람 + 플레이어가 미는 힘
-  const finalPos = rotation.mul(scale).add(wind).add(pushOffset);
+    // 최종 위치 = 원래위치 + 바람 + 플레이어가 미는 힘
+    const finalPos = rotation.mul(scale).add(wind).add(pushOffset);
 
-  return finalPos;
-});
+    return finalPos;
+  },
+);
 
-const swayLevel3 = Fn(([rotation, scale, noiseTexture, uvY, amp, pow, freq]: [rotation: Node, scale: Node, noiseTexture: Node, uvY: Node, amp: Node, pow: Node, freq: Node, playerPos: Node]) => {
-  const sway1 = sin(positionLocal.x.add(noiseTexture.mul(amp)))
-    .mul(freq)
-    .mul(uvY.pow(pow));
-  const swayvec = vec3(sway1.mul(-1), 0, 0);
-  const finalPos = rotation.mul(scale).add(swayvec);
+const swayLevel3 = Fn(
+  ([rotation, scale, noiseTexture, uvY, amp, pow, freq]: [
+    rotation: Node,
+    scale: Node,
+    noiseTexture: Node,
+    uvY: Node,
+    amp: Node,
+    pow: Node,
+    freq: Node,
+    playerPos: Node,
+  ]) => {
+    const sway1 = sin(positionLocal.x.add(noiseTexture.mul(amp)))
+      .mul(freq)
+      .mul(uvY.pow(pow));
+    const swayvec = vec3(sway1.mul(-1), 0, 0);
+    const finalPos = rotation.mul(scale).add(swayvec);
 
-  return finalPos;
-});
+    return finalPos;
+  },
+);
 
 const flatShade = Fn(() => {
   const upVec = vec3(0, 1, 0);
@@ -96,11 +128,16 @@ class Base {
     freq: uniform(0.7),
     amp: uniform(3.5),
     pow: uniform(1.2),
-    emissiveRemap: { x: uniform(0.3), y: uniform(1), z: uniform(0), w: uniform(1) },
-    pushStrength: uniform(0.8)
+    emissiveRemap: {
+      x: uniform(0.3),
+      y: uniform(1),
+      z: uniform(0),
+      w: uniform(1),
+    },
+    pushStrength: uniform(0.4),
   };
   protected config!: TConfig;
-  // 생성된 시각적 청크들을 ID를 키(Key)로 하여 저장할 Map
+
   chunkVisuals: Map<string, ChunkMeshes> = new Map();
 
   matLOD1!: NodeMaterial;
@@ -110,13 +147,13 @@ class Base {
 
   protected options = {
     INSTANCES_PER_CHUNK: 40,
-    SCALE: { MIN: 1, MAX: 1.5 }
+    SCALE: { MIN: 1, MAX: 1.5 },
   };
 
   constructor(
     scene: Scene,
     private gui: GUI,
-    CONFIG: TConfig
+    CONFIG: TConfig,
   ) {
     this.scene = scene;
     this.config = CONFIG;
@@ -129,22 +166,40 @@ class Base {
 
       const uniforms = Base.uniforms;
 
-      grassGUI.add(uniforms.grassScale, "value", 0, 10, 0.01).name("grass scale");
+      grassGUI
+        .add(uniforms.grassScale, "value", 0, 10, 0.01)
+        .name("grass scale");
 
       grassGUI.add(uniforms.speedX, "value", 0, 20, 0.1).name("speedX");
       grassGUI.add(uniforms.speedZ, "value", 0, 20, 0.1).name("speedZ");
-      grassGUI.add(uniforms.freq, "value", 0, 20, 0.1).name("freq");
-      grassGUI.add(uniforms.amp, "value", 0, 20, 0.1).name("amp");
-      grassGUI.add(uniforms.pow, "value", 0, 20, 0.1).name("pow");
-      grassGUI.add(uniforms.emissiveRemap.x, "value", -4, 4, 0.01).name("emissive x");
-      grassGUI.add(uniforms.emissiveRemap.y, "value", -4, 4, 0.01).name("emissive y");
-      grassGUI.add(uniforms.emissiveRemap.z, "value", -4, 4, 0.01).name("emissive z");
-      grassGUI.add(uniforms.emissiveRemap.w, "value", -4, 4, 0.01).name("emissive w");
-      grassGUI.add(uniforms.pushStrength, "value", 0, 2, 0.01).name("epushStrength");
+      grassGUI
+        .add(uniforms.freq, "value", 0, 1, 0.001)
+        .name("grass big wave & tilt");
+      grassGUI.add(uniforms.amp, "value", 0, 5, 0.001).name("grass small wave");
+      grassGUI.add(uniforms.pow, "value", 0, 2, 0.001).name("grass bend");
+      grassGUI
+        .add(uniforms.emissiveRemap.x, "value", -4, 4, 0.01)
+        .name("emissive x");
+      grassGUI
+        .add(uniforms.emissiveRemap.y, "value", -4, 4, 0.01)
+        .name("emissive y");
+      grassGUI
+        .add(uniforms.emissiveRemap.z, "value", -4, 4, 0.01)
+        .name("emissive z");
+      grassGUI
+        .add(uniforms.emissiveRemap.w, "value", -4, 4, 0.01)
+        .name("emissive w");
+      grassGUI
+        .add(uniforms.pushStrength, "value", 0, 2, 0.01)
+        .name("pushStrength");
     }
   }
 
-  createInstance(geoLOD: [BufferGeometry, BufferGeometry], matLOD: [NodeMaterial, NodeMaterial], genType: 1 | 2) {
+  createInstance(
+    geoLOD: [BufferGeometry, BufferGeometry],
+    matLOD: [NodeMaterial, NodeMaterial],
+    genType: 1 | 2,
+  ) {
     const { chunkCell, chunkSize, offset } = lodManager;
 
     const halfX = (chunkCell.x * chunkSize) / 2;
@@ -152,7 +207,10 @@ class Base {
 
     const { INSTANCES_PER_CHUNK } = this.options;
 
-    const { iPos, iData } = genType < 2 ? genInstanceAttributes(INSTANCES_PER_CHUNK, chunkSize) : genInstanceAttributes2(INSTANCES_PER_CHUNK, chunkSize);
+    const { iPos, iData } =
+      genType < 2
+        ? genInstanceAttributes(INSTANCES_PER_CHUNK, chunkSize)
+        : genInstanceAttributes2(INSTANCES_PER_CHUNK, chunkSize);
 
     geoLOD[0].setAttribute("iPos", iPos);
     geoLOD[1].setAttribute("iPos", iPos);
@@ -163,8 +221,16 @@ class Base {
       for (let z = 0; z < chunkCell.z; z++) {
         const chunkId = `chunk_${x}_${z}`;
 
-        const meshLOD1 = new InstancedMesh(geoLOD[0], matLOD[0], INSTANCES_PER_CHUNK);
-        const meshLOD2 = new InstancedMesh(geoLOD[1], matLOD[1], INSTANCES_PER_CHUNK);
+        const meshLOD1 = new InstancedMesh(
+          geoLOD[0],
+          matLOD[0],
+          INSTANCES_PER_CHUNK,
+        );
+        const meshLOD2 = new InstancedMesh(
+          geoLOD[1],
+          matLOD[1],
+          INSTANCES_PER_CHUNK,
+        );
 
         meshLOD1.castShadow = false;
         meshLOD1.receiveShadow = true;
@@ -188,7 +254,7 @@ class Base {
 
         this.chunkVisuals.set(chunkId, {
           level_1: meshLOD1,
-          level_2: meshLOD2
+          level_2: meshLOD2,
         });
       }
     }
@@ -198,7 +264,10 @@ class Base {
 
   protected setMaterial() {}
 
-  initMaterial(col1: ConstNode<Color> | UniformNode<Color>, col2: ConstNode<Color> | UniformNode<Color>) {
+  initMaterial(
+    col1: ConstNode<Color> | UniformNode<Color>,
+    col2: ConstNode<Color> | UniformNode<Color>,
+  ) {
     const { mask, depth, perlin_noise } = Assets.get();
 
     this.baseMaterial.transparent = false;
@@ -222,7 +291,10 @@ class Base {
     const offset = uniform(vec2(0, 0.25));
 
     const mapSize = lodManager.chunkSize * (lodManager.chunkCell.x + 1.35);
-    const scaledUV = vec2(iWPos.x.add(offset.x), iWPos.z.negate().add(offset.y)).div(mapSize).add(0.5).toVar();
+    const scaledUV = vec2(iWPos.x.add(offset.x), iWPos.z.negate().add(offset.y))
+      .div(mapSize)
+      .add(0.5)
+      .toVar();
     const maskTexture = texture(mask, scaledUV).r.toVar();
     const depthTexture = texture(depth, scaledUV).b.toVar();
 
@@ -235,7 +307,7 @@ class Base {
       iWPos.xz
         .div(20)
         .dot(iWPos.xz.add(vec2(-130, -60)).div(20))
-        .sub(time.mul(uniforms.speedX))
+        .sub(time.mul(uniforms.speedX)),
     ).remapClamp(-1, 1, 0.7, 1);
     const noise1 = texture(perlin_noise, iWPos.xz.add(timer).div(10)).g;
     const noiseTexture = noise1.mul(length1).toVar();
@@ -249,7 +321,14 @@ class Base {
     // -------- Emissive Node -------
     const emissive = maskTexture
       .remapClamp(0.8, 1, 0, 1)
-      .mul(noiseTexture.remapClamp(uniforms.emissiveRemap.x, uniforms.emissiveRemap.y, uniforms.emissiveRemap.z, uniforms.emissiveRemap.w))
+      .mul(
+        noiseTexture.remapClamp(
+          uniforms.emissiveRemap.x,
+          uniforms.emissiveRemap.y,
+          uniforms.emissiveRemap.z,
+          uniforms.emissiveRemap.w,
+        ),
+      )
       .mul(color("yellowgreen"))
       .mul(uvY)
       .toVar();
@@ -271,7 +350,11 @@ class Base {
     // instance scale
     const scaleIndex = bitAnd(shiftRight(iData, 10), 255);
     const scaleRatio = float(scaleIndex).div(31.0);
-    const scale = scaleRatio.mul(this.options.SCALE.MIN).mul(uniforms.grassScale).mul(maskTexture).mul(isVisible);
+    const scale = scaleRatio
+      .mul(this.options.SCALE.MIN)
+      .mul(uniforms.grassScale)
+      .mul(maskTexture)
+      .mul(isVisible);
 
     // instance position
     const pos = vec3(iPos.x, depthTexture.mul(-3.5), iPos.z);
@@ -283,16 +366,28 @@ class Base {
     const noiseSwayZ = sin(positionLocal.z.add(noiseTexture.mul(uniforms.freq)))
       .mul(uniforms.amp)
       .mul(uvY);
-    const sway = vec3(noiseSwayX.mul(-1), 0, noiseSwayZ.mul(0.5)).mul(isVisible);
+    const sway = vec3(noiseSwayX.mul(-1), 0, noiseSwayZ.mul(0.5)).mul(
+      isVisible,
+    );
 
     // player push grass
-    const flatForceVec = vec2(iWPos.x.sub(playerPos.x), iWPos.z.sub(playerPos.z));
+    const flatForceVec = vec2(
+      iWPos.x.sub(playerPos.x),
+      iWPos.z.sub(playerPos.z),
+    );
     const dist = flatForceVec.dot(flatForceVec);
     const influence = dist.smoothstep(0.0, 2.5).oneMinus();
     const safeDir = flatForceVec.add(vec3(0.001, 0.0, 0.001)).normalize();
-    const pushOffset = safeDir.mul(influence).mul(uniforms.pushStrength).mul(uvY);
+    const pushOffset = safeDir
+      .mul(influence)
+      .mul(uniforms.pushStrength)
+      .mul(uvY);
 
-    matLOD1.positionNode = rotation.mul(scale).add(sway).add(pushOffset).add(pos);
+    matLOD1.positionNode = rotation
+      .mul(scale)
+      .add(sway)
+      .add(pushOffset)
+      .add(pos);
     matLOD2.positionNode = rotation.mul(scale).add(sway).add(pos);
 
     this.matLOD1 = matLOD1;
@@ -316,7 +411,6 @@ class Base {
           meshes.level_2.visible = true;
           break;
         case "level_3":
-          // 잔디의 경우 너무 멀면 아예 렌더링을 안 하는 것이 성능에 좋습니다.
           // meshes.level_3.visible = true;
           break;
       }
@@ -325,9 +419,12 @@ class Base {
 }
 
 export class Grass extends Base {
-  protected options: { INSTANCES_PER_CHUNK: number; SCALE: { MIN: number; MAX: number } } = {
+  protected options: {
+    INSTANCES_PER_CHUNK: number;
+    SCALE: { MIN: number; MAX: number };
+  } = {
     INSTANCES_PER_CHUNK: 10000,
-    SCALE: { MIN: 3, MAX: 3.5 }
+    SCALE: { MIN: 3, MAX: 3.5 },
   };
 
   constructor(scene: Scene, gui: GUI, config: TConfig) {
@@ -352,9 +449,12 @@ export class Grass extends Base {
 }
 
 export class LongGrass extends Base {
-  protected options: { INSTANCES_PER_CHUNK: number; SCALE: { MIN: number; MAX: number } } = {
+  protected options: {
+    INSTANCES_PER_CHUNK: number;
+    SCALE: { MIN: number; MAX: number };
+  } = {
     INSTANCES_PER_CHUNK: 1000,
-    SCALE: { MIN: 1, MAX: 2 }
+    SCALE: { MIN: 1, MAX: 2 },
   };
 
   constructor(scene: Scene, gui: GUI, config: TConfig) {
@@ -410,9 +510,12 @@ export class LongGrass extends Base {
 }
 
 export class LongGrass2 extends Base {
-  protected options: { INSTANCES_PER_CHUNK: number; SCALE: { MIN: number; MAX: number } } = {
+  protected options: {
+    INSTANCES_PER_CHUNK: number;
+    SCALE: { MIN: number; MAX: number };
+  } = {
     INSTANCES_PER_CHUNK: 1000,
-    SCALE: { MIN: 1, MAX: 2 }
+    SCALE: { MIN: 1, MAX: 2 },
   };
   constructor(scene: Scene, gui: GUI, config: TConfig) {
     super(scene, gui, config);

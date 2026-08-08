@@ -15,17 +15,26 @@
         <div>"Cat Cartoon Character" (https://skfb.ly/o7TVV) by hunnyduke is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).</div>
       </nav>
     </header>
-    <div class="container" id="loading">
-      <div class="cat-character">🐱</div>
-
-      <h1 class="welcome-text">고양이 동산에 오신 것을 환영합니다!</h1>
-
-      <progress id="loading-bar" class="cat-progress" value="0" max="100"></progress>
-
-      <button class="enter-btn" id="enter">
-        <span>입장하기</span>
-        <span class="paw">🐾</span>
-      </button>
+    <div id="loading">
+      <div class="scrim2"></div>
+      <div class="scrim1"></div>
+      <div class="ui">
+        <svg id="art" viewBox="18 28 235 88" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="wob" x="-20%" y="-20%" width="140%" height="140%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.025 0.04" numOctaves="2" seed="3" result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+          <g id="letters" filter="url(#wob)" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 0)">
+            <path d="M92 52 Q80 34 58 36 Q34 38 30 66 Q26 96 52 100 Q76 103 82 80 Q84 72 74 72 L62 72" />
+            <path d="M107 60 L109 102 M109 76 Q113 60 129 60" />
+            <path d="M162 67 Q148 57 138 67 Q128 79 136 91 Q144 101 158 93 Q164 89 162 73 L162 99" />
+            <path d="M203 68 Q189 60 181 68 Q175 76 189 82 Q203 88 197 96 Q189 104 175 96" />
+            <path d="M242 68 Q228 60 220 68 Q214 76 228 82 Q242 88 236 96 Q228 104 214 96" />
+          </g>
+        </svg>
+      </div>
     </div>
     <main>
       <canvas id="game"></canvas>

@@ -146,27 +146,7 @@ class Game {
     this.canvas = this.renderer.domElement;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio);
-    this.renderer.toneMapping = ACESFilmicToneMapping;
-    // this.renderer.autoClear = false;
-
-    this.gui.add(this.renderer, "toneMapping", {
-      ACES: ACESFilmicToneMapping,
-      none: NoToneMapping,
-      Cineon: CineonToneMapping,
-      Neutral: NeutralToneMapping,
-      Linear: LinearToneMapping,
-      Reinhard: ReinhardToneMapping,
-      AgX: AgXToneMapping
-    });
-
-    this.renderer.shadowMap.type = PCFShadowMap;
-
-    this.gui.add(this.renderer.shadowMap, "type", {
-      basic: BasicShadowMap,
-      VSM: VSMShadowMap,
-      PCF: PCFShadowMap,
-      PCFSoft: PCFSoftShadowMap
-    });
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
   }
 
   onResize = () => {
@@ -178,7 +158,7 @@ class Game {
     const delta = this.clock.getDelta();
     eventBus.emit("update", delta);
 
-    // this.controls.update();
+    this.controls.update();
 
     eventBus.emit("lateUpdate", { delta, playerPos: this.player.getPosition() });
 

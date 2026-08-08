@@ -46,13 +46,14 @@ export class World {
     new Rocks(scene, CONFIG);
     new SeaCreatures(scene);
 
-    new Water(scene, CONFIG);
+    new Water(scene, CONFIG, gui);
 
     // Objects
     new House(scene, gui);
     new Bridge(scene);
 
     // Trees
+
     new Bush3(scene, gui, CONFIG);
     new WillowTree(scene, gui);
     new Trees(scene, gui, CONFIG);

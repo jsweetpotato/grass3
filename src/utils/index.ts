@@ -48,7 +48,6 @@ export function genInstanceAttributes(count: number, size: number = 10) {
     metadata.setX(i, type | (rot << 2) | (scale << 10));
   }
 
-  // return { iPos: instancedBufferAttribute(positions), iData: instancedBufferAttribute(metadata) };
   return { iPos: positions, iData: metadata };
 }
 

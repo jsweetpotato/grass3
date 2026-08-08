@@ -38,8 +38,8 @@ export class Player {
   private characterRotationTarget = 0;
   private speed = 0;
 
-  private readonly WALK_SPEED = 2;
-  private readonly RUN_SPEED = 5;
+  private readonly WALK_SPEED = 1.25;
+  private readonly RUN_SPEED = 2.5;
 
   get rotationTarget() {
     return this.characterRotationTarget;
@@ -54,7 +54,7 @@ export class Player {
 
     this.mesh = gltf.scene;
     this.mesh.scale.setScalar(0.5);
-    this.mesh.position.y = -0.15;
+    this.mesh.position.y = -0.18;
 
     this.mesh.traverse((v) => {
       if (v instanceof Object3D) {
@@ -70,7 +70,7 @@ export class Player {
     scene.add(this.container);
     this.container.add(this.mesh);
 
-    this.rigidBody = PhysicsSystem.createPlayer(new Vector3(0, 4, 0));
+    this.rigidBody = PhysicsSystem.createPlayer(new Vector3(0, 3, 0));
     this.rigidBody.lockRotations(true, true);
 
     this.animeController = new AnimationController(this.mesh, gltf.animations);

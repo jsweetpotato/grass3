@@ -1,63 +1,125 @@
-import { BoxGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicNodeMaterial, MeshLambertNodeMaterial, PlaneGeometry, Vector3, type Scene } from "three/webgpu";
-import { distance, positionWorld, reflector, texture, time, uv, vec2 } from "three/tsl";
+import {
+  BoxGeometry,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshBasicNodeMaterial,
+  MeshLambertNodeMaterial,
+  MeshStandardNodeMaterial,
+  PlaneGeometry,
+  Vector3,
+  type Scene,
+} from "three/webgpu";
+import {
+  color,
+  distance,
+  float,
+  Fn,
+  mix,
+  positionWorld,
+  rangeFogFactor,
+  reflector,
+  sample,
+  step,
+  texture,
+  time,
+  uniform,
+  uv,
+  vec2,
+  vec4,
+} from "three/tsl";
 
 // managerts
 import { Assets } from "@/core/resources";
 
 // types
 import type { TConfig } from "@/world/World";
+import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+import { hashBlur } from "three/examples/jsm/tsl/display/hashBlur.js";
 export class Water {
+  private unifoms = {
+    uv_scale_x: uniform(float(2.79)),
+    uv_scale_y: uniform(float(2.73)),
+  };
   constructor(
     private scene: Scene,
-    private CONFIG: TConfig
+    private CONFIG: TConfig,
+    private gui: GUI,
   ) {
     const waveMesh = this.createWave();
-    const overlayMesh = this.createOverlay();
-    this.scene.add(waveMesh, overlayMesh);
+    // const overlayMesh = this.createOverlay();
+    // const rockWaveMesh = this.createRockWave();
+    this.scene.add(waveMesh);
+    // this.scene.add(rockWaveMesh);
+    // this.scene.add(overlayMesh);
   }
 
   createWave() {
-    const { depth } = Assets.get();
+    const { water_mask: depth } = Assets.get();
 
     const geometry = new BoxGeometry(400, 0.001, 400, 1, 1, 1);
     const material = new MeshLambertNodeMaterial({
-      transparent: true
+      transparent: true,
     });
 
-    const reflection = reflector({
-      // @ts-ignore
-      resolutionScale: 0.7,
-      depth: true,
-      bounces: false
-    });
-    reflection.getDepthNode().toVar();
+    const waterGUI = this.gui.addFolder("water");
 
-    reflection.target.rotateX(-Math.PI / 2);
-    this.scene.add(reflection.target);
-    const scaledUV = vec2(uv().x.mul(2.6).sub(0.8), uv().y.mul(2.6).sub(0.8));
-    const terrainDataBlue = texture(depth, scaledUV).b.toVar();
+    waterGUI
+      .add(this.unifoms.uv_scale_x, "value", 0, 5, 0.01)
+      .name("uv scale x");
+    waterGUI
+      .add(this.unifoms.uv_scale_y, "value", 0, 5, 0.01)
+      .name("uv scale y");
+
+    const centeredUV = uv()
+      .sub(0.5) // 0~1 → -0.5~0.5 (중심이 원점)
+      .mul(vec2(this.unifoms.uv_scale_x, this.unifoms.uv_scale_y)) // 스케일
+      .add(0.5);
+    const terrainDataBlue = texture(depth, centeredUV).b.toVar();
 
     const timec = time.mul(0.1);
-    const waveFrequency = terrainDataBlue.add(timec).mul(10);
+    const waveFrequency = terrainDataBlue.sub(timec).mul(10);
     const wavePattern = waveFrequency.mod(1);
     const compensatedWave = wavePattern.sub(terrainDataBlue);
-    const surfaceWaves = compensatedWave.remapClamp(0.2, 1, 0, 2);
+    const surfaceWaves = compensatedWave
+      .remapClamp(0.2, 1, 0, 2)
+      .add(color("#00bbff"));
 
-    material.colorNode = surfaceWaves;
+    material.opacityNode = terrainDataBlue.pow(2);
 
-    const opacity = terrainDataBlue.pow(10).remapClamp(0, 1, 1, 0);
+    material.colorNode = color("#00bbff");
+    // material.alphaTestNode = step(0.1);
+    const mesh = new Mesh(geometry, material);
+    mesh.position.y = -5.5;
 
-    material.opacityNode = opacity;
+    return mesh;
+  }
+
+  createRockWave() {
+    const { water_mask_rock: depth } = Assets.get();
+
+    const geometry = new PlaneGeometry(400, 400, 1, 1);
+    geometry.rotateX(-Math.PI / 2);
+
+    const material = new MeshBasicNodeMaterial();
+
+    const centeredUV = uv()
+      .sub(0.5) // 0~1 → -0.5~0.5 (중심이 원점)
+      .mul(vec2(this.unifoms.uv_scale_x, this.unifoms.uv_scale_y)) // 스케일
+      .add(0.5);
+    const terrainDataBlue = texture(depth, centeredUV).b.toVar();
+
+    material.colorNode = terrainDataBlue;
 
     const mesh = new Mesh(geometry, material);
-    mesh.position.y = -4.5;
+    mesh.position.y = -4.9;
 
     return mesh;
   }
 
   createOverlay() {
     const d = 60;
-    const hgt = -4.45;
+    const hgt = -4.49;
     const pos = [
       { x: d, y: hgt, z: 0 }, // o
       { x: -d, y: hgt, z: 0 }, // o
@@ -66,7 +128,7 @@ export class Water {
       { x: -d, y: hgt, z: -d }, // o
       { x: d, y: hgt, z: -d },
       { x: 0, y: hgt, z: -d }, // o
-      { x: 0, y: hgt, z: d }
+      { x: 0, y: hgt, z: d },
     ];
 
     const vec = new Vector3();

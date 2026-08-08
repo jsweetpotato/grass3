@@ -37,6 +37,7 @@ export class CameraSystem {
   public static init(scene: Scene, gui: GUI) {
     this._camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 
+    this._camera.position.set(0, 140, 0);
     scene.add(this._camera);
 
     const cameraGUI = gui.addFolder("camera");
