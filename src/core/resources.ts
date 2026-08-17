@@ -23,7 +23,7 @@ export const resources = [
 
   { name: "starfish", path: "/models/starfishRe.glb", type: "object" },
   { name: "seashell", path: "/models/seashellRe.glb", type: "object" },
-  { name: "trees", path: "/models/treesRe.glb", type: "object" },
+  { name: "trees", path: "/models/treesMeshopt.glb", type: "object" },
   { name: "big_tree", path: "/models/big_treeRe.glb", type: "object" },
 
   // Bush
