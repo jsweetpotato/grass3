@@ -1,13 +1,4 @@
-import {
-  BackSide,
-  BufferGeometry,
-  Float32BufferAttribute,
-  Group,
-  Mesh,
-  MeshLambertNodeMaterial,
-  RepeatWrapping,
-  type Scene,
-} from "three/webgpu";
+import { BackSide, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshLambertNodeMaterial, RepeatWrapping, type Scene } from "three/webgpu";
 import {
   round,
   attribute,
@@ -27,6 +18,12 @@ import {
   normalize,
   positionLocal,
   color,
+  positionWorld,
+  time,
+  step,
+  normalLocal,
+  cameraViewMatrix,
+  mix
 } from "three/tsl";
 
 // managers
@@ -38,9 +35,9 @@ import type GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 export class WillowTree {
   constructor(
     private scene: Scene,
-    gui: GUI,
+    gui: GUI
   ) {
-    const { willow_tree, willow_leaf } = Assets.get();
+    const { willow_tree, willow_leaf, perlin_noise } = Assets.get();
 
     const alphaTexture = willow_leaf;
     alphaTexture.wrapS = RepeatWrapping;
@@ -53,11 +50,9 @@ export class WillowTree {
     group.add(...foliages);
 
     const scale = {
-      scalar: 1,
+      scalar: 1
     };
-    gui
-      .add(scale, "scalar", 0, 1, 0.01)
-      .onFinishChange((v) => group.scale.setScalar(v));
+    gui.add(scale, "scalar", 0, 1, 0.01).onFinishChange((v) => group.scale.setScalar(v));
 
     group.position.set(-32, -0.8, -12);
     gui.add(group.position, "x", -100, 100, 0.1).name("treeX");
@@ -68,7 +63,8 @@ export class WillowTree {
 
     const material = new MeshLambertNodeMaterial({
       transparent: false,
-      side: BackSide,
+      side: BackSide
+      // wireframe: true,
     });
 
     const indexNode = round(attribute("aUVIndex"));
@@ -90,10 +86,11 @@ export class WillowTree {
 
     const finalUV = add(scaledUV, vec2(uOffset, vOffset));
     const alpha = texture(alphaTexture, finalUV).r.step(0.4).toVar();
-    material.opacityNode = alpha;
+
+    const noise = texture(perlin_noise, positionWorld.xz.mul(0.2)).r;
 
     // Position
-    const size = 1.5;
+    const size = 2;
     const uvOffsetBase = uv().remap(0, 1, -1, 1);
     const uvOffset = vec2(uvOffsetBase.x, uvOffsetBase.y);
 
@@ -101,19 +98,34 @@ export class WillowTree {
 
     const centerView = modelViewMatrix.mul(vec4(centerLocal, 1.0)).toVar();
 
-    // const inflation = normalLocal.mul(uniforms.inflate);
+    // Wind animation
+    const windAmp = 1.5;
+    const windDir = vec3(-1, 0, 0).normalize();
+    const windDirView = cameraViewMatrix.mul(vec4(windDir, 0)).xyz;
 
-    const finalViewPos = centerView
-      .add(vec4(vec3(uvOffset.mul(size).add(0.5 /** inflation */), 0.0), 0.0))
-      .toVar();
+    const droop = uv().y.oneMinus();
+    const windPhase = centerLocal.dot(windDir).mul(0.4).add(noise);
+    const bigWind = windPhase.add(positionWorld.y).add(time.mul(1.5)).sin().mul(0.5).add(0.8).mul(droop.add(0.1));
+    const smallWind = centerLocal.y.mul(200).add(time.mul(9)).cos().mul(0.12).mul(droop);
+    const sway = vec4(windDirView.mul(bigWind.add(smallWind).mul(windAmp)), 0);
+    const inflation = normalLocal.mul(0.5);
+    const volumn = vec4(vec3(uvOffset.mul(size).add(inflation), 0.0), 0.0);
+
+    const finalViewPos = centerView.add(sway).add(volumn);
+
+    // const finalViewPos = swayedCenter
+    //   .add(vec4(vec3(uvOffset.mul(size).add(inflation), 0.0), 0.0))
+    //   .toVar();
 
     material.vertexNode = cameraProjectionMatrix.mul(finalViewPos);
 
     material.colorNode = color("yellowgreen");
-    material.alphaTestNode = float(0.5);
 
-    const sphericalNormal = normalize(positionLocal);
-    material.normalNode = sphericalNormal;
+    material.alphaTestNode = step(alpha, 0.2);
+
+    const sphericalNormal = cameraViewMatrix.mul(vec4(centerLocal, 0)).normalize();
+    const planeN = normalize(vec3(uvOffset, 0));
+    material.normalNode = mix(sphericalNormal, planeN, 0.4);
     // 1. Geometry 캐싱용 Map (중복된 toNonIndexed 및 연산 방지)
     const processedGeometries = new Map<BufferGeometry, BufferGeometry>();
 
