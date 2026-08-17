@@ -26,3 +26,4 @@ dist-ssr
 
 
 quiz/
+.env*.local
